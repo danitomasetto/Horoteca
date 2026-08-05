@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Coleção de Relógios"
+rootProject.name = "Horoteca"
 
 include(":app")

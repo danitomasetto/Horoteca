@@ -1,5 +1,5 @@
 {
-  "name": "Coleção de Relógios",
+  "name": "Horoteca",
   "description": "Aplicativo para organizar coleção de relógios com fichas de cadastro, histórico de manutenção, importador de documentos do Google Docs e gerador de catálogo web.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

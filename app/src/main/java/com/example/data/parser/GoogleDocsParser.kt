@@ -10,6 +10,82 @@ data class ParsedWatchResult(
 
 object GoogleDocsParser {
 
+    fun parseMultiWatchDocument(
+        rawText: String,
+        orderNumber: String = "",
+        suffixType: String = "01" // "01" or "A"
+    ): List<ParsedWatchResult> {
+        val cleanOrder = orderNumber.trim()
+
+        // Split text into sections if it contains multiple watches
+        val blocks = splitIntoWatchBlocks(rawText)
+
+        return blocks.mapIndexed { index, blockText ->
+            val singleResult = parseDocumentText(blockText)
+            var watch = singleResult.watch
+
+            if (cleanOrder.isNotEmpty()) {
+                val suffix = if (suffixType == "A") {
+                    val charCode = 'A'.code + index
+                    if (charCode <= 'Z'.code) charCode.toChar().toString() else "${index + 1}"
+                } else {
+                    String.format("%02d", index + 1)
+                }
+
+                val fullOrderRegId = if (blocks.size > 1 || cleanOrder.isNotEmpty()) "$cleanOrder-$suffix" else cleanOrder
+
+                val updatedRef = if (watch.referenceNumber.isBlank()) fullOrderRegId else "${watch.referenceNumber} (Ped. $fullOrderRegId)"
+                val updatedNotes = "Número de Registro / Pedido: $fullOrderRegId\n" + watch.notes
+
+                watch = watch.copy(
+                    referenceNumber = updatedRef,
+                    notes = updatedNotes.trim()
+                )
+            }
+
+            ParsedWatchResult(watch, singleResult.maintenanceLogs)
+        }
+    }
+
+    private fun splitIntoWatchBlocks(rawText: String): List<String> {
+        val lines = rawText.lines()
+        val blocks = mutableListOf<String>()
+        var currentBlock = StringBuilder()
+
+        var marcaCountInCurrentBlock = 0
+
+        for (line in lines) {
+            val lower = line.trim().lowercase()
+
+            val isExplicitSeparator = lower.startsWith("---") || lower.startsWith("===") ||
+                    lower.contains("item 2") || lower.contains("item 3") ||
+                    lower.contains("relógio 2") || lower.contains("relogio 2") ||
+                    lower.contains("unidade 2") || lower.contains("unidade 3")
+
+            val isNewMarcaHeader = lower.startsWith("marca:") || lower.startsWith("brand:")
+
+            if (isExplicitSeparator || (isNewMarcaHeader && marcaCountInCurrentBlock >= 1)) {
+                if (currentBlock.isNotBlank()) {
+                    blocks.add(currentBlock.toString())
+                    currentBlock = StringBuilder()
+                    marcaCountInCurrentBlock = 0
+                }
+            }
+
+            if (isNewMarcaHeader) {
+                marcaCountInCurrentBlock++
+            }
+
+            currentBlock.append(line).append("\n")
+        }
+
+        if (currentBlock.isNotBlank()) {
+            blocks.add(currentBlock.toString())
+        }
+
+        return if (blocks.isEmpty()) listOf(rawText) else blocks
+    }
+
     fun parseDocumentText(rawText: String): ParsedWatchResult {
         val lines = rawText.lines().map { it.trim() }.filter { it.isNotEmpty() }
         

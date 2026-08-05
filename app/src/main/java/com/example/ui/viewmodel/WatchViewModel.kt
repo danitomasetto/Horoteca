@@ -127,6 +127,17 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
         return generatedId
     }
 
+    fun importMultipleParsedWatches(parsedList: List<com.example.data.parser.ParsedWatchResult>) {
+        viewModelScope.launch {
+            parsedList.forEach { parsed ->
+                val newWatchId = repository.insertWatch(parsed.watch)
+                parsed.maintenanceLogs.forEach { log ->
+                    repository.insertMaintenanceLog(log.copy(watchId = newWatchId))
+                }
+            }
+        }
+    }
+
     fun generateWebShowcaseHtml(title: String, owner: String): String {
         return WebPageGenerator.generateHTML(
             collectionTitle = title,
@@ -248,6 +259,44 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
                     cost = 250.0,
                     details = "Regulagem no cronocomparador para +3 segundos/dia.",
                     nextServiceDueDate = "10/02/2026"
+                )
+            )
+
+            val seikoVintageId = repository.insertWatch(
+                WatchEntity(
+                    brand = "Seiko",
+                    model = "Vintage Automatic 6309 8940 GWO",
+                    referenceNumber = "6309 8940",
+                    serialNumber = "6309-8940",
+                    purchaseYear = 2026,
+                    purchaseDateFormatted = "15/03/2026",
+                    purchasePrice = 500.0,
+                    currency = "R$",
+                    estimatedValue = 1200.0,
+                    provenance = "Compra eBay UK (Vendedor heley8564) - Pedido eBay #206120876079",
+                    condition = "Seminovo - Bom (Vintage 36mm)",
+                    movementType = "Automático",
+                    movementCaliber = "Seiko Calibre 6309",
+                    caseMaterial = "Aço Inoxidável 36mm",
+                    strapMaterial = "Pulseira original Seiko em Aço",
+                    caseDiameterMm = 36.0,
+                    waterResistance = "Resistente a respingos",
+                    dialColor = "Prateado com textura xadrez e det. dourados",
+                    boxAndPapers = false,
+                    imageUri = "android.resource://com.example/drawable/seiko_presage_1785946338262",
+                    notes = "Compra no eBay (GBP 37,41 + Imposto R$ 30,61 + frete + revisão Cesar R$ 175 = R$ 500). Mostrador diferenciado com textura e marcadores dourados, calendário bilíngue JUE 27."
+                )
+            )
+
+            repository.insertMaintenanceLog(
+                MaintenanceLogEntity(
+                    watchId = seikoVintageId,
+                    serviceDate = "15/03/2026",
+                    serviceType = "Conserto / Revisão Técnica",
+                    providerName = "Cesar Relojoeiro",
+                    cost = 175.0,
+                    details = "Conserto e revisão técnica completa do movimento automático 6309.",
+                    nextServiceDueDate = "15/03/2029"
                 )
             )
         }

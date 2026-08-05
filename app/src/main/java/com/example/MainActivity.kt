@@ -144,6 +144,9 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
                 onBackClick = { navController.popBackStack() },
                 onImportSave = { rawText ->
                     viewModel.importFromGoogleDocsText(rawText)
+                },
+                onImportSaveMultiple = { parsedList ->
+                    viewModel.importMultipleParsedWatches(parsedList)
                 }
             )
         }
