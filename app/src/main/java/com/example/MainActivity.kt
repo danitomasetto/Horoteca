@@ -76,6 +76,10 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
                 },
                 onOpenWebShowcaseClick = {
                     navController.navigate("web_showcase")
+                },
+                onOpenBrandHistoryClick = { brandName ->
+                    val route = if (!brandName.isNullOrBlank()) "brand_history?brand=$brandName" else "brand_history"
+                    navController.navigate(route)
                 }
             )
         }
@@ -103,6 +107,9 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
                 },
                 onGenerateWebPageClick = {
                     navController.navigate("web_showcase")
+                },
+                onOpenBrandHistoryClick = { brandName ->
+                    navController.navigate("brand_history?brand=$brandName")
                 }
             )
         }
@@ -125,6 +132,9 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
                 onSaveWatch = { watchEntity ->
                     viewModel.saveWatch(watchEntity)
                     navController.popBackStack()
+                },
+                onOpenBrandHistoryClick = { brandName ->
+                    navController.navigate("brand_history?brand=$brandName")
                 }
             )
         }
@@ -146,6 +156,23 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
 
             WebShowcaseScreen(
                 htmlContent = htmlContent,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "brand_history?brand={brand}",
+            arguments = listOf(
+                navArgument("brand") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val brandParam = backStackEntry.arguments?.getString("brand")
+            BrandHistoryScreen(
+                initialBrandName = brandParam,
                 onBackClick = { navController.popBackStack() }
             )
         }

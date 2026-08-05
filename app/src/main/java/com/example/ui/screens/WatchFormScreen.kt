@@ -27,7 +27,8 @@ import com.example.ui.theme.HorologyNavySurface
 fun WatchFormScreen(
     initialWatch: WatchEntity? = null,
     onBackClick: () -> Unit,
-    onSaveWatch: (WatchEntity) -> Unit
+    onSaveWatch: (WatchEntity) -> Unit,
+    onOpenBrandHistoryClick: (String) -> Unit = {}
 ) {
     var brand by remember { mutableStateOf(initialWatch?.brand ?: "") }
     var model by remember { mutableStateOf(initialWatch?.model ?: "") }
@@ -154,6 +155,15 @@ fun WatchFormScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            if (brand.isNotBlank()) {
+                TextButton(
+                    onClick = { onOpenBrandHistoryClick(brand) },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text("📖 Consultar história e tradição da marca '$brand'", style = MaterialTheme.typography.labelSmall, color = GoldPrimary)
+                }
+            }
 
             OutlinedTextField(
                 value = model,

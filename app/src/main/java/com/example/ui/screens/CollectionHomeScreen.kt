@@ -42,7 +42,8 @@ fun CollectionHomeScreen(
     onWatchClick: (Long) -> Unit,
     onAddWatchClick: () -> Unit,
     onImportDocsClick: () -> Unit,
-    onOpenWebShowcaseClick: () -> Unit
+    onOpenWebShowcaseClick: () -> Unit,
+    onOpenBrandHistoryClick: (String?) -> Unit
 ) {
     var isFabExpanded by remember { mutableStateOf(false) }
     val ptBr = Locale("pt", "BR")
@@ -75,6 +76,13 @@ fun CollectionHomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onOpenBrandHistoryClick(selectedBrandFilter) }) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = "História das Marcas",
+                            tint = GoldPrimary
+                        )
+                    }
                     IconButton(onClick = onOpenWebShowcaseClick) {
                         Icon(
                             imageVector = Icons.Default.Public,

@@ -44,7 +44,8 @@ fun WatchDetailScreen(
     onDeleteClick: () -> Unit,
     onAddMaintenanceLog: (MaintenanceLogEntity) -> Unit,
     onDeleteMaintenanceLog: (Long) -> Unit,
-    onGenerateWebPageClick: () -> Unit
+    onGenerateWebPageClick: () -> Unit,
+    onOpenBrandHistoryClick: (String) -> Unit
 ) {
     if (watchWithMaintenance == null) {
         Box(
@@ -213,6 +214,20 @@ fun WatchDetailScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = GoldLight
                             )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedButton(
+                            onClick = { onOpenBrandHistoryClick(watch.brand) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = GoldPrimary),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "História da Marca (${watch.brand})", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
