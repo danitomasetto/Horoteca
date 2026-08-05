@@ -34,7 +34,7 @@ jobs:
           fi
 
       - name: Build Debug APK
-        run: gradle assembleDebug -Pkotlin.compiler.execution.strategy=in-process --no-configuration-cache --stacktrace
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
