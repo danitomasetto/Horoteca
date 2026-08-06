@@ -26,7 +26,9 @@ jobs:
           channel: stable
           cache: true
       - name: Generate platform projects
-        run: flutter create --platforms android,ios --org br.com.tomasetto --project-name horoteca .
+        run: |
+          flutter create --platforms android,ios --org br.com.tomasetto --project-name horoteca .
+          rm -f test/widget_test.dart
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
