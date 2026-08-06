@@ -20,4 +20,7 @@ interface MaintenanceDao {
 
     @Query("DELETE FROM maintenance_logs WHERE id = :id")
     suspend fun deleteLogById(id: Long)
+
+    @Query("DELETE FROM maintenance_logs")
+    suspend fun deleteAllLogs()
 }

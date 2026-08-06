@@ -45,9 +45,13 @@ fun CollectionHomeScreen(
     onOpenWebShowcaseClick: () -> Unit,
     onOpenBrandHistoryClick: (String?) -> Unit,
     syncStatus: String? = null,
-    onSyncSupabaseClick: () -> Unit = {}
+    onSyncSupabaseClick: () -> Unit = {},
+    onClearAllDataClick: () -> Unit = {},
+    onLoadSampleDataClick: () -> Unit = {}
 ) {
     var isFabExpanded by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val ptBr = Locale("pt", "BR")
     val currencyFormat = NumberFormat.getCurrencyInstance(ptBr)
 
@@ -98,6 +102,38 @@ fun CollectionHomeScreen(
                             contentDescription = "Página Web da Coleção",
                             tint = GoldPrimary
                         )
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Mais opções",
+                                tint = GoldPrimary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(HorologyNavySurface)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Carregar Dados de Exemplo") },
+                                leadingIcon = { Icon(Icons.Default.Download, contentDescription = null, tint = GoldPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onLoadSampleDataClick()
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Apagar Todos os Dados", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    showDeleteConfirmDialog = true
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -376,5 +412,39 @@ fun CollectionHomeScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Apagar Todos os Relógios?",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Esta ação apagar todos os relógios e históricos de manutenção armazenados localmente no aplicativo. Deseja continuar?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        onClearAllDataClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Apagar Tudo", color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

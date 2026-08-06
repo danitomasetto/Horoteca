@@ -20,11 +20,6 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
     val brandFilter: StateFlow<String?> = _brandFilter.asStateFlow()
 
     private val _allWatches = repository.allWatchesWithMaintenance
-        .onEach { list ->
-            if (list.isEmpty()) {
-                seedInitialData()
-            }
-        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -157,7 +152,13 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
         )
     }
 
-    private fun seedInitialData() {
+    fun clearAllData() {
+        viewModelScope.launch {
+            repository.clearAllData()
+        }
+    }
+
+    fun seedInitialData() {
         viewModelScope.launch {
             val rolexId = repository.insertWatch(
                 WatchEntity(

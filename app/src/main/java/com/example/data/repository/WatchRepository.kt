@@ -103,6 +103,11 @@ class WatchRepository(
         }
     }
 
+    suspend fun clearAllData() {
+        maintenanceDao.deleteAllLogs()
+        watchDao.deleteAllWatches()
+    }
+
     suspend fun syncWithSupabase(): Result<String> {
         return try {
             val remoteWatches = SupabaseClient.api.getWatches(
