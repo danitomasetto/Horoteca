@@ -114,26 +114,37 @@ class WatchRepository(
             val localLogs = maintenanceDao.getAllLogsList()
 
             var pushedWatchCount = 0
+            var pushedLogCount = 0
+
             localWatches.forEach { watch ->
-                val dto = watch.toSupabaseDto()
-                SupabaseClient.api.insertWatch(
-                    apiKey = SupabaseClient.DEFAULT_ANON_KEY,
-                    auth = SupabaseClient.authHeader(),
-                    watch = dto
-                )
-                pushedWatchCount++
+                try {
+                    val dto = watch.toSupabaseDto()
+                    SupabaseClient.api.insertWatch(
+                        apiKey = SupabaseClient.DEFAULT_ANON_KEY,
+                        auth = SupabaseClient.authHeader(),
+                        watch = dto
+                    )
+                    pushedWatchCount++
+                } catch (e: Exception) {
+                    Log.e("WatchRepository", "Failed pushing watch id=${watch.id}", e)
+                }
             }
 
             localLogs.forEach { log ->
-                val dto = log.toSupabaseDto()
-                SupabaseClient.api.insertMaintenanceLog(
-                    apiKey = SupabaseClient.DEFAULT_ANON_KEY,
-                    auth = SupabaseClient.authHeader(),
-                    log = dto
-                )
+                try {
+                    val dto = log.toSupabaseDto()
+                    SupabaseClient.api.insertMaintenanceLog(
+                        apiKey = SupabaseClient.DEFAULT_ANON_KEY,
+                        auth = SupabaseClient.authHeader(),
+                        log = dto
+                    )
+                    pushedLogCount++
+                } catch (e: Exception) {
+                    Log.e("WatchRepository", "Failed pushing log id=${log.id} for watch ${log.watchId}", e)
+                }
             }
 
-            Result.success("Sucesso! $pushedWatchCount relógios enviados ao Supabase.")
+            Result.success("Sucesso! $pushedWatchCount relógios e $pushedLogCount anotações/históricos enviados ao Supabase.")
         } catch (e: Exception) {
             Log.e("WatchRepository", "Error pushing all data to Supabase", e)
             Result.failure(e)
