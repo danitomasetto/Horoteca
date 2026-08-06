@@ -513,6 +513,7 @@ class BrandsScreen extends StatelessWidget {
           },
         ),
       );
+}
 
 class _DetailCard extends StatelessWidget {
   const _DetailCard({required this.icon, required this.title, required this.rows});
