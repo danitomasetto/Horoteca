@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Horoteca</title>
+    <style>
+      :root {
+        --bg: #101622;
+        --surface: #182131;
+        --surface-soft: #222d41;
+        --line: #344258;
+        --gold: #d6b25e;
+        --gold-soft: #efd89d;
+        --text: #f7f1e3;
+        --muted: #a9b4c6;
+        --ok: #77d394;
+        --bad: #ff8d8d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(214, 178, 94, 0.12), transparent 32rem),
+          linear-gradient(180deg, var(--bg) 0%, #0d1420 100%);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        background: var(--gold);
+        color: #172033;
+        cursor: pointer;
+        font-weight: 800;
+        padding: 0.78rem 1rem;
+      }
+
+      button.secondary {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #101827;
+        color: var(--text);
+        outline: 0;
+        padding: 0.78rem 0.9rem;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(214, 178, 94, 0.14);
+      }
+
+      .shell {
+        margin: 0 auto;
+        max-width: 1180px;
+        padding: 24px;
+      }
+
+      .topbar {
+        align-items: center;
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        margin-bottom: 24px;
+      }
+
+      .brand h1,
+      .login h1 {
+        color: var(--gold);
+        letter-spacing: 0;
+        margin: 0;
+      }
+
+      .brand h1 {
+        font-size: clamp(1.8rem, 4vw, 3.1rem);
+        line-height: 1.02;
+      }
+
+      .brand p,
+      .login p {
+        color: var(--muted);
+      }
+
+      .brand p {
+        margin: 8px 0 0;
+      }
+
+      .login {
+        background: rgba(24, 33, 49, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin: 10vh auto 0;
+        max-width: 440px;
+        padding: 24px;
+      }
+
+      .login p {
+        margin: 8px 0 22px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 14px;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .toolbar {
+        align-items: end;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: minmax(220px, 1fr) 180px auto auto;
+        margin: 18px 0 20px;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-bottom: 20px;
+      }
+
+      .metric,
+      .card,
+      .empty,
+      .status {
+        background: rgba(24, 33, 49, 0.86);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .metric {
+        padding: 16px;
+      }
+
+      .metric strong {
+        color: var(--gold-soft);
+        display: block;
+        font-size: 1.45rem;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+      }
+
+      .metric span {
+        color: var(--muted);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        margin-top: 6px;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        overflow: hidden;
+      }
+
+      .card-head {
+        align-items: start;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .thumb {
+        align-items: center;
+        background: linear-gradient(145deg, #202b3f, #101827);
+        border: 1px solid rgba(214, 178, 94, 0.35);
+        border-radius: 8px;
+        color: var(--gold);
+        display: flex;
+        flex: 0 0 86px;
+        font-size: 1.8rem;
+        font-weight: 900;
+        height: 86px;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .thumb img {
+        height: 100%;
+        object-fit: cover;
+        width: 100%;
+      }
+
+      .title {
+        min-width: 0;
+      }
+
+      .title .code {
+        color: var(--gold);
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+
+      .title h2 {
+        font-size: 1.15rem;
+        line-height: 1.2;
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .title p {
+        color: var(--muted);
+        margin: 7px 0 0;
+      }
+
+      .card-body {
+        display: grid;
+        gap: 10px;
+        padding: 16px;
+      }
+
+      .row {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 142px minmax(0, 1fr);
+      }
+
+      .row span:first-child {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .row span:last-child {
+        overflow-wrap: anywhere;
+      }
+
+      .result-ok {
+        color: var(--ok);
+        font-weight: 900;
+      }
+
+      .result-bad {
+        color: var(--bad);
+        font-weight: 900;
+      }
+
+      details {
+        border-top: 1px solid var(--line);
+        padding: 0 16px 16px;
+      }
+
+      summary {
+        color: var(--gold-soft);
+        cursor: pointer;
+        font-weight: 900;
+        padding: 14px 0 0;
+      }
+
+      .history {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .history-item {
+        background: rgba(16, 24, 39, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 10px;
+      }
+
+      .history-item strong {
+        color: var(--gold-soft);
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .history-item p {
+        color: var(--muted);
+        margin: 0;
+      }
+
+      .empty,
+      .status {
+        color: var(--muted);
+        padding: 20px;
+        text-align: center;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 840px) {
+        .shell {
+          padding: 16px;
+        }
+
+        .topbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .toolbar,
+        .metrics,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .card-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .thumb {
+          flex: none;
+          height: 160px;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section id="loginView" class="login">
+        <h1>Horoteca</h1>
+        <p>Entre com o mesmo login do app para visualizar a colecao no navegador.</p>
+        <form id="loginForm">
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" autocomplete="email" inputmode="email" required type="email" />
+          </div>
+          <div class="field">
+            <label for="password">Senha</label>
+            <input id="password" name="password" autocomplete="current-password" required type="password" />
+          </div>
+          <div class="actions">
+            <button id="loginButton" type="submit">Entrar</button>
+          </div>
+        </form>
+        <p id="loginStatus" class="status hidden"></p>
+      </section>
+
+      <section id="appView" class="hidden">
+        <header class="topbar">
+          <div class="brand">
+            <h1>Horoteca</h1>
+            <p>Catalogo web para conferir pecas, custos e historico.</p>
+          </div>
+          <div class="actions">
+            <button id="refreshButton" type="button">Atualizar</button>
+            <button id="logoutButton" class="secondary" type="button">Sair</button>
+          </div>
+        </header>
+
+        <section class="metrics">
+          <div class="metric"><strong id="metricCount">0</strong><span>Relogios</span></div>
+          <div class="metric"><strong id="metricCost">R$ 0,00</strong><span>Custo real</span></div>
+          <div class="metric"><strong id="metricValue">R$ 0,00</strong><span>Valor estimado</span></div>
+          <div class="metric"><strong id="metricResult">R$ 0,00</strong><span>Resultado potencial</span></div>
+        </section>
+
+        <section class="toolbar">
+          <div class="field">
+            <label for="search">Buscar</label>
+            <input id="search" placeholder="Marca, modelo, codigo ou pedido" type="search" />
+          </div>
+          <div class="field">
+            <label for="brandFilter">Marca</label>
+            <select id="brandFilter">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <button id="sortCostButton" class="secondary" type="button">Ordenar por custo</button>
+          <button id="sortCodeButton" class="secondary" type="button">Ordenar por codigo</button>
+        </section>
+
+        <p id="appStatus" class="status hidden"></p>
+        <section id="watchGrid" class="grid"></section>
+      </section>
+    </main>
+
+    <script>
+      const SUPABASE_URL = "https://nlkhbhgzscpdistzuyod.supabase.co";
+      const SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6Im5sa2hiaGd6c2NwZGlzdHp1eW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTQ3MDgsImV4cCI6MjEwMTUzMDcwOH0.Niy8n76LZnvIbwbItuP8164Rx7wduU9q8tTwTGY21B8";
+
+      const money = new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+
+      const state = {
+        session: JSON.parse(localStorage.getItem("horotecaSession") || "null"),
+        watches: [],
+        histories: [],
+        photos: [],
+        sort: "code",
+      };
+
+      const els = {
+        loginView: document.querySelector("#loginView"),
+        appView: document.querySelector("#appView"),
+        loginForm: document.querySelector("#loginForm"),
+        loginButton: document.querySelector("#loginButton"),
+        loginStatus: document.querySelector("#loginStatus"),
+        refreshButton: document.querySelector("#refreshButton"),
+        logoutButton: document.querySelector("#logoutButton"),
+        search: document.querySelector("#search"),
+        brandFilter: document.querySelector("#brandFilter"),
+        sortCostButton: document.querySelector("#sortCostButton"),
+        sortCodeButton: document.querySelector("#sortCodeButton"),
+        appStatus: document.querySelector("#appStatus"),
+        watchGrid: document.querySelector("#watchGrid"),
+        metricCount: document.querySelector("#metricCount"),
+        metricCost: document.querySelector("#metricCost"),
+        metricValue: document.querySelector("#metricValue"),
+        metricResult: document.querySelector("#metricResult"),
+      };
+
+      function show(view) {
+        els.loginView.classList.toggle("hidden", view !== "login");
+        els.appView.classList.toggle("hidden", view !== "app");
+      }
+
+      function status(target, message, isError = false) {
+        target.textContent = message || "";
+        target.classList.toggle("hidden", !message);
+        target.style.color = isError ? "var(--bad)" : "var(--muted)";
+      }
+
+      async function request(path, options = {}) {
+        const headers = {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        };
+        if (state.session?.access_token) {
+          headers.Authorization = `Bearer ${state.session.access_token}`;
+        }
+        const response = await fetch(`${SUPABASE_URL}${path}`, {
+          ...options,
+          headers,
+        });
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : null;
+        if (!response.ok) {
+          throw new Error(data?.msg || data?.message || response.statusText);
+        }
+        return data;
+      }
+
+      async function signIn(email, password) {
+        return request("/auth/v1/token?grant_type=password", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+          headers: { Authorization: `Bearer ${SUPABASE_KEY}` },
+        });
+      }
+
+      async function loadData() {
+        status(els.appStatus, "Carregando colecao...");
+        const [watches, histories, photos] = await Promise.all([
+          request("/rest/v1/watches?select=*&order=horoteca_code.asc"),
+          request("/rest/v1/maintenance_logs?select=*&order=event_date.desc"),
+          request(
+            "/rest/v1/watch_photos?select=watch_id,storage_path,caption,is_cover,sort_order&order=sort_order.asc",
+          ).catch(() => []),
+        ]);
+        state.watches = watches.map(normalizeWatch);
+        state.histories = histories.map(normalizeHistory);
+        state.photos = photos;
+        buildBrandFilter();
+        render();
+        status(els.appStatus, "");
+      }
+
+      function normalizeWatch(row) {
+        const historyTotal = () =>
+          state.histories
+            .filter((item) => item.watch_id === row.id)
+            .reduce((sum, item) => sum + (item.amount_brl || item.cost || 0), 0);
+        return {
+          ...row,
+          totalInvested() {
+            return historyTotal() || row.purchase_total_brl || row.purchase_price || 0;
+          },
+          valueEstimate() {
+            return row.estimated_value || 0;
+          },
+        };
+      }
+
+      function normalizeHistory(row) {
+        return {
+          ...row,
+          amount_brl: Number(row.amount_brl ?? row.cost ?? 0),
+          date: parseDate(row.event_date || row.service_date),
+        };
+      }
+
+      function parseDate(value) {
+        if (!value) return "";
+        if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+          const [year, month, day] = value.slice(0, 10).split("-");
+          return `${day}/${month}/${year}`;
+        }
+        return value;
+      }
+
+      function buildBrandFilter() {
+        const selected = els.brandFilter.value;
+        const brands = [...new Set(state.watches.map((watch) => watch.brand).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, "pt-BR"));
+        els.brandFilter.innerHTML = '<option value="">Todas</option>';
+        for (const brand of brands) {
+          const option = document.createElement("option");
+          option.value = brand;
+          option.textContent = brand;
+          els.brandFilter.append(option);
+        }
+        els.brandFilter.value = brands.includes(selected) ? selected : "";
+      }
+
+      function filteredWatches() {
+        const query = els.search.value.trim().toLowerCase();
+        const brand = els.brandFilter.value;
+        const list = state.watches.filter((watch) => {
+          const text = [
+            watch.brand,
+            watch.model,
+            watch.reference_number,
+            watch.horoteca_code,
+            watch.order_number,
+            watch.marketplace_item_id,
+            watch.seller_name,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return (!brand || watch.brand === brand) && (!query || text.includes(query));
+        });
+        return list.sort((a, b) => {
+          if (state.sort === "cost") return b.totalInvested() - a.totalInvested();
+          return (a.horoteca_code || "").localeCompare(b.horoteca_code || "", "pt-BR");
+        });
+      }
+
+      function render() {
+        renderMetrics();
+        const watches = filteredWatches();
+        els.watchGrid.innerHTML = "";
+        if (!watches.length) {
+          els.watchGrid.innerHTML = '<div class="empty">Nenhum relogio encontrado.</div>';
+          return;
+        }
+        for (const watch of watches) {
+          els.watchGrid.append(renderCard(watch));
+        }
+      }
+
+      function renderMetrics() {
+        const cost = state.watches.reduce((sum, watch) => sum + watch.totalInvested(), 0);
+        const value = state.watches.reduce((sum, watch) => sum + watch.valueEstimate(), 0);
+        els.metricCount.textContent = state.watches.length;
+        els.metricCost.textContent = money.format(cost);
+        els.metricValue.textContent = money.format(value);
+        els.metricResult.textContent = money.format(value - cost);
+      }
+
+      function renderCard(watch) {
+        const history = state.histories.filter((item) => item.watch_id === watch.id);
+        const total = watch.totalInvested();
+        const estimated = watch.valueEstimate();
+        const result = estimated - total;
+        const article = document.createElement("article");
+        article.className = "card";
+        article.innerHTML = `
+          <div class="card-head">
+            <div class="thumb">${renderThumb(watch)}</div>
+            <div class="title">
+              <div class="code">${escapeHtml(watch.horoteca_code || "Sem codigo")}</div>
+              <h2>${escapeHtml(watch.brand || "Sem marca")} ${escapeHtml(watch.model || "")}</h2>
+              <p>${escapeHtml([watch.reference_number, watch.movement_type, watch.movement_caliber].filter(Boolean).join(" | "))}</p>
+            </div>
+          </div>
+          <div class="card-body">
+            ${row("Pedido", watch.order_number || "Nao informado")}
+            ${row("Item eBay", watch.marketplace_item_id || "Nao informado")}
+            ${row("Vendedor", watch.seller_name || "Nao informado")}
+            ${row("Compra", originalMoney(watch))}
+            ${row("Custo real", money.format(total))}
+            ${row("Valor estimado", estimated ? money.format(estimated) : "Nao informado")}
+            ${row("Resultado", `<span class="${result >= 0 ? "result-ok" : "result-bad"}">${money.format(result)}</span>`)}
+            ${row("Estado", watch.condition || "Nao informado")}
+          </div>
+          <details>
+            <summary>Historico e gastos (${history.length})</summary>
+            <div class="history">
+              ${history.length ? history.map(renderHistory).join("") : '<div class="history-item"><p>Nenhum historico registrado.</p></div>'}
+            </div>
+          </details>
+        `;
+        return article;
+      }
+
+      function renderThumb(watch) {
+        if (watch.image_uri && /^https?:\/\//.test(watch.image_uri)) {
+          return `<img alt="${escapeHtml(watch.brand || "Relogio")}" src="${escapeHtml(watch.image_uri)}" />`;
+        }
+        return "H";
+      }
+
+      function renderHistory(item) {
+        return `
+          <div class="history-item">
+            <strong>${escapeHtml([item.date, item.event_type || "historico"].filter(Boolean).join(" | "))}</strong>
+            <p>${escapeHtml(item.description || "Historico")} ${item.amount_brl ? `- ${money.format(item.amount_brl)}` : ""}</p>
+          </div>
+        `;
+      }
+
+      function row(label, value) {
+        return `<div class="row"><span>${label}</span><span>${value}</span></div>`;
+      }
+
+      function originalMoney(watch) {
+        if (watch.purchase_currency && watch.purchase_amount_original) {
+          return `${watch.purchase_currency} ${Number(watch.purchase_amount_original).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+          })}`;
+        }
+        return watch.purchase_total_brl ? money.format(watch.purchase_total_brl) : "Nao informado";
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      els.loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        els.loginButton.disabled = true;
+        status(els.loginStatus, "Entrando...");
+        try {
+          const form = new FormData(event.currentTarget);
+          state.session = await signIn(form.get("email"), form.get("password"));
+          localStorage.setItem("horotecaSession", JSON.stringify(state.session));
+          show("app");
+          await loadData();
+        } catch (error) {
+          status(els.loginStatus, `Nao foi possivel entrar: ${error.message}`, true);
+        } finally {
+          els.loginButton.disabled = false;
+        }
+      });
+
+      els.refreshButton.addEventListener("click", loadData);
+      els.logoutButton.addEventListener("click", () => {
+        localStorage.removeItem("horotecaSession");
+        state.session = null;
+        state.watches = [];
+        state.histories = [];
+        show("login");
+      });
+      els.search.addEventListener("input", render);
+      els.brandFilter.addEventListener("change", render);
+      els.sortCostButton.addEventListener("click", () => {
+        state.sort = "cost";
+        render();
+      });
+      els.sortCodeButton.addEventListener("click", () => {
+        state.sort = "code";
+        render();
+      });
+
+      if (state.session?.access_token) {
+        show("app");
+        loadData().catch((error) => {
+          localStorage.removeItem("horotecaSession");
+          state.session = null;
+          show("login");
+          status(els.loginStatus, `Sessao expirada: ${error.message}`, true);
+        });
+      } else {
+        show("login");
+      }
+    </script>
+  </body>
+</html>
