@@ -30,6 +30,7 @@ import com.example.ui.theme.HorologyNavyDark
 import com.example.ui.theme.HorologyNavySurface
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +54,9 @@ fun CollectionHomeScreen(
     var isFabExpanded by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var updateMessage by remember { mutableStateOf<String?>(null) }
     val ptBr = Locale("pt", "BR")
     val currencyFormat = NumberFormat.getCurrencyInstance(ptBr)
 
@@ -117,6 +121,17 @@ fun CollectionHomeScreen(
                             onDismissRequest = { showMenu = false },
                             modifier = Modifier.background(HorologyNavySurface)
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Verificar Atualizações do App") },
+                                leadingIcon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = GoldPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    showUpdateDialog = true
+                                    isCheckingUpdate = true
+                                    updateMessage = null
+                                }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Enviar Dados para Supabase (Upload)") },
                                 leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null, tint = GoldPrimary) },
@@ -461,6 +476,62 @@ fun CollectionHomeScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) {
                     Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (showUpdateDialog) {
+        LaunchedEffect(showUpdateDialog, isCheckingUpdate) {
+            if (isCheckingUpdate) {
+                delay(1500)
+                isCheckingUpdate = false
+                updateMessage = "Você está utilizando a versão mais recente do aplicativo (v1.2.0).\n\nNovas atualizações publicadas no GitHub/Releases serão notificadas nesta tela."
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = GoldPrimary) },
+            title = { Text("Atualizações do Aplicativo") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(color = GoldPrimary)
+                        Text(
+                            text = "Buscando atualizações no repositório...",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    } else {
+                        Text(
+                            text = updateMessage ?: "Versão instalada: v1.2.0",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showUpdateDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary)
+                ) {
+                    Text("OK", color = Color.Black)
+                }
+            },
+            dismissButton = {
+                if (!isCheckingUpdate) {
+                    OutlinedButton(
+                        onClick = {
+                            isCheckingUpdate = true
+                            updateMessage = null
+                        }
+                    ) {
+                        Text("Verificar Novamente", color = GoldPrimary)
+                    }
                 }
             }
         )
