@@ -30,7 +30,8 @@ jobs:
           flutter create --platforms android,ios --org br.com.tomasetto --project-name horoteca .
           rm -f test/widget_test.dart
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test
+      - name: Format Dart sources
+        run: dart format lib test
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
