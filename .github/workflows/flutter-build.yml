@@ -1,0 +1,50 @@
+name: Flutter Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'agent/**']
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-build.yml'
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate platform projects
+        run: |
+          flutter create --platforms android,ios --org br.com.tomasetto --project-name horoteca .
+          rm -f test/widget_test.dart
+          sed -i '/<application/i\\    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />' android/app/src/main/AndroidManifest.xml
+          /usr/bin/python3 - <<'PY'
+          from pathlib import Path
+          path = Path('ios/Runner/Info.plist')
+          text = path.read_text()
+          text = text.replace('</dict>', '<key>NSCameraUsageDescription</key><string>Fotografar relógios da coleção.</string><key>NSPhotoLibraryUsageDescription</key><string>Selecionar fotos dos relógios.</string></dict>')
+          path.write_text(text)
+          PY
+      - run: flutter pub get
+      - name: Format Dart sources
+        run: dart format lib test
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horoteca-flutter-debug
+          path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
