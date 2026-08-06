@@ -28,6 +28,10 @@ import com.example.ui.theme.GoldLight
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.HorologyNavyDark
 import com.example.ui.theme.HorologyNavySurface
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import com.example.data.remote.GitHubClient
 import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.coroutines.delay
@@ -51,12 +55,15 @@ fun CollectionHomeScreen(
     onClearAllDataClick: () -> Unit = {},
     onLoadSampleDataClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var isFabExpanded by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
     var updateMessage by remember { mutableStateOf<String?>(null) }
+    var latestReleaseUrl by remember { mutableStateOf<String?>(null) }
+    val defaultRepo = "tomasetto.daniel/relogios"
     val ptBr = Locale("pt", "BR")
     val currencyFormat = NumberFormat.getCurrencyInstance(ptBr)
 
@@ -482,11 +489,26 @@ fun CollectionHomeScreen(
     }
 
     if (showUpdateDialog) {
-        LaunchedEffect(showUpdateDialog, isCheckingUpdate) {
+        LaunchedEffect(isCheckingUpdate) {
             if (isCheckingUpdate) {
-                delay(1500)
-                isCheckingUpdate = false
-                updateMessage = "Você está utilizando a versão mais recente do aplicativo (v1.2.0).\n\nNovas atualizações publicadas no GitHub/Releases serão notificadas nesta tela."
+                latestReleaseUrl = null
+                try {
+                    val owner = "danitomasetto"
+                    val repo = "Horoteca"
+                    val release = GitHubClient.api.getLatestRelease(owner, repo)
+                    val tag = release.tagName ?: "v1.2.0"
+                    latestReleaseUrl = release.htmlUrl
+                    
+                    if (tag.lowercase() != "v1.2.0" && tag.lowercase() != "1.2.0") {
+                        updateMessage = "🎉 Nova versão encontrada no GitHub!\n\n• Versão: $tag (${release.name ?: ""})\n\nNotas da Versão:\n${release.body ?: "Sem notas de lançamento."}"
+                    } else {
+                        updateMessage = "Você já está utilizando a versão mais recente ($tag)."
+                    }
+                } catch (e: Exception) {
+                    updateMessage = "Não foi possível consultar as atualizações do repositório GitHub (danitomasetto/Horoteca).\n\nDetalhes: ${e.localizedMessage ?: "Verifique se há uma Release criada em Releases no repositório."}"
+                } finally {
+                    isCheckingUpdate = false
+                }
             }
         }
 
@@ -500,38 +522,67 @@ fun CollectionHomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    Text(
+                        text = "Versão atual instalada: v1.2.0",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     if (isCheckingUpdate) {
                         CircularProgressIndicator(color = GoldPrimary)
                         Text(
-                            text = "Buscando atualizações no repositório...",
+                            text = "Consultando GitHub Releases API (danitomasetto/Horoteca)...",
                             style = MaterialTheme.typography.bodyMedium
                         )
-                    } else {
-                        Text(
-                            text = updateMessage ?: "Versão instalada: v1.2.0",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    } else if (updateMessage != null) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = updateMessage!!,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    latestReleaseUrl?.let { url ->
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    // ignore
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, tint = Color.Black)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Baixar Nova Versão no GitHub", color = Color.Black)
+                        }
                     }
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = { showUpdateDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary)
+                    onClick = {
+                        isCheckingUpdate = true
+                        updateMessage = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
+                    enabled = !isCheckingUpdate
                 ) {
-                    Text("OK", color = Color.Black)
+                    Text(if (updateMessage == null && !isCheckingUpdate) "Verificar Novamente" else "Verificar no GitHub", color = Color.Black)
                 }
             },
             dismissButton = {
-                if (!isCheckingUpdate) {
-                    OutlinedButton(
-                        onClick = {
-                            isCheckingUpdate = true
-                            updateMessage = null
-                        }
-                    ) {
-                        Text("Verificar Novamente", color = GoldPrimary)
-                    }
+                TextButton(onClick = { showUpdateDialog = false }) {
+                    Text("Fechar")
                 }
             }
         )
