@@ -46,6 +46,7 @@ fun CollectionHomeScreen(
     onOpenBrandHistoryClick: (String?) -> Unit,
     syncStatus: String? = null,
     onSyncSupabaseClick: () -> Unit = {},
+    onPushSupabaseClick: () -> Unit = {},
     onClearAllDataClick: () -> Unit = {},
     onLoadSampleDataClick: () -> Unit = {}
 ) {
@@ -116,6 +117,23 @@ fun CollectionHomeScreen(
                             onDismissRequest = { showMenu = false },
                             modifier = Modifier.background(HorologyNavySurface)
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Enviar Dados para Supabase (Upload)") },
+                                leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null, tint = GoldPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onPushSupabaseClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Baixar do Supabase (Download)") },
+                                leadingIcon = { Icon(Icons.Default.CloudDownload, contentDescription = null, tint = GoldPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    onSyncSupabaseClick()
+                                }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Carregar Dados de Exemplo") },
                                 leadingIcon = { Icon(Icons.Default.Download, contentDescription = null, tint = GoldPrimary) },

@@ -67,9 +67,17 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
 
     fun syncWithSupabase() {
         viewModelScope.launch {
-            _syncStatus.value = "Sincronizando..."
+            _syncStatus.value = "Sincronizando (Baixando)..."
             val result = repository.syncWithSupabase()
             _syncStatus.value = result.getOrElse { "Falha na sincronização: ${it.localizedMessage}" }
+        }
+    }
+
+    fun pushAllToSupabase() {
+        viewModelScope.launch {
+            _syncStatus.value = "Enviando para Supabase..."
+            val result = repository.pushAllToSupabase()
+            _syncStatus.value = result.getOrElse { "Falha ao enviar: ${it.localizedMessage}" }
         }
     }
 
@@ -160,155 +168,162 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
 
     fun seedInitialData() {
         viewModelScope.launch {
-            val rolexId = repository.insertWatch(
-                WatchEntity(
-                    brand = "Rolex",
-                    model = "Submariner Date 41mm",
-                    referenceNumber = "126610LN",
-                    serialNumber = "W79482A9",
-                    purchaseYear = 2022,
-                    purchaseDateFormatted = "18/05/2022",
-                    purchasePrice = 72000.0,
-                    currency = "R$",
-                    estimatedValue = 85000.0,
-                    provenance = "Boutique Oficial Rolex São Paulo • NF #98124 com Certificado de Garantia Internacional",
-                    condition = "Excelente (Mint)",
-                    movementType = "Automático",
-                    movementCaliber = "Calibre 3235",
-                    caseMaterial = "Aço Inoxidável Oystersteel 904L",
-                    strapMaterial = "Pulseira Oyster com fecho Glidelock",
-                    caseDiameterMm = 41.0,
-                    waterResistance = "300m / 1000ft",
-                    dialColor = "Preto Brilhante",
-                    boxAndPapers = true,
-                    imageUri = "android.resource://com.example/drawable/rolex_submariner_1785946310385",
-                    notes = "Adquirido novo na caixa. Guardado em estojo com winder automático. Bezel Cerachrom em cerâmica preta inalterável."
-                )
-            )
-
-            repository.insertMaintenanceLog(
-                MaintenanceLogEntity(
-                    watchId = rolexId,
-                    serviceDate = "15/01/2024",
-                    serviceType = "Inspeção Periódica de Estanqueidade",
-                    providerName = "Assistência Autorizada Rolex SP",
-                    cost = 450.0,
-                    details = "Teste de estanqueidade em câmara hiperbárica a 30 bar. Substituição da vedação da coroa Triplock.",
-                    nextServiceDueDate = "15/01/2027"
-                )
-            )
-
-            val omegaId = repository.insertWatch(
-                WatchEntity(
-                    brand = "Omega",
-                    model = "Speedmaster Moonwatch Professional",
-                    referenceNumber = "310.30.42.50.01.001",
-                    serialNumber = "83912041",
-                    purchaseYear = 2021,
-                    purchaseDateFormatted = "10/11/2021",
-                    purchasePrice = 45000.0,
-                    currency = "R$",
-                    estimatedValue = 52000.0,
-                    provenance = "Leilão de Horologia Fina RJ com estojo de viagem e medalha comemorativa da missão Apollo 11",
-                    condition = "Excelente",
-                    movementType = "Corda Manual (Manual Wind)",
-                    movementCaliber = "Omega Co-Axial Master Chronometer 3861",
-                    caseMaterial = "Aço Inoxidável 316L",
-                    strapMaterial = "Pulseira de Couro de Crocodilo Preta extra",
-                    caseDiameterMm = 42.0,
-                    waterResistance = "50m",
-                    dialColor = "Preto Step Dial",
-                    boxAndPapers = true,
-                    imageUri = "android.resource://com.example/drawable/omega_speedmaster_1785946324723",
-                    notes = "O lendário relógio usado na Lua. Cristal Hesalite com logotipo Omega gravado no centro. Resistência magnética até 15.000 gauss."
-                )
-            )
-
-            repository.insertMaintenanceLog(
-                MaintenanceLogEntity(
-                    watchId = omegaId,
-                    serviceDate = "20/06/2023",
-                    serviceType = "Revisão Completa & Lubrificação",
-                    providerName = "Mestre Relojoeiro Horologia Fina",
-                    cost = 2200.0,
-                    details = "Desmontagem completa do calibre 3861, lavagem por ultrassom, substituição do tambor de corda e lubrificação com óleos Moebius.",
-                    nextServiceDueDate = "20/06/2028"
-                )
-            )
-
-            val seikoId = repository.insertWatch(
+            // 1. Seiko 5 Automático (Mostrador Branco / Prata)
+            val seiko5Id = repository.insertWatch(
                 WatchEntity(
                     brand = "Seiko",
-                    model = "Presage Cocktail Time 'Blue Moon'",
-                    referenceNumber = "SRPB41J1",
-                    serialNumber = "9D1823",
-                    purchaseYear = 2023,
-                    purchaseDateFormatted = "05/02/2023",
-                    purchasePrice = 3800.0,
-                    currency = "R$",
-                    estimatedValue = 4500.0,
-                    provenance = "Boutique Seiko Japão / Importado com Nota Fiscal e Garantia",
-                    condition = "Novo na Caixa",
-                    movementType = "Automático com Corda Manual",
-                    movementCaliber = "Seiko 4R35",
-                    caseMaterial = "Aço Inoxidável Polido Zaratsu",
-                    strapMaterial = "Pulseira de Aço Inoxidável com fecho Deployant",
-                    caseDiameterMm = 40.5,
-                    waterResistance = "50m",
-                    dialColor = "Azul Sunbrush Guilloché",
-                    boxAndPapers = true,
-                    imageUri = "android.resource://com.example/drawable/seiko_presage_1785946338262",
-                    notes = "Mostrador inspirado nos coquetéis do Star Bar em Ginza, Tóquio. Ponteiros facetados em corte diamante."
-                )
-            )
-
-            repository.insertMaintenanceLog(
-                MaintenanceLogEntity(
-                    watchId = seikoId,
-                    serviceDate = "10/02/2024",
-                    serviceType = "Ajuste Fino de Precisão",
-                    providerName = "Ateliê Horológico Seiko SP",
-                    cost = 250.0,
-                    details = "Regulagem no cronocomparador para +3 segundos/dia.",
-                    nextServiceDueDate = "10/02/2026"
-                )
-            )
-
-            val seikoVintageId = repository.insertWatch(
-                WatchEntity(
-                    brand = "Seiko",
-                    model = "Vintage Automatic 6309 8940 GWO",
-                    referenceNumber = "6309 8940",
-                    serialNumber = "6309-8940",
+                    model = "Seiko 5 Automatic Vintage",
+                    referenceNumber = "7009-SEIKO5",
+                    serialNumber = "EBAY-127730961092-1",
                     purchaseYear = 2026,
                     purchaseDateFormatted = "15/03/2026",
-                    purchasePrice = 500.0,
+                    purchasePrice = 450.0, // Custo base pro-rata do Lote (R$ 1.350 / 3)
                     currency = "R$",
-                    estimatedValue = 1200.0,
-                    provenance = "Compra eBay UK (Vendedor heley8564) - Pedido eBay #206120876079",
-                    condition = "Seminovo - Bom (Vintage 36mm)",
+                    estimatedValue = 850.0, // Valor estimado mercado BR pós-restauro (R$ 700 - 900)
+                    provenance = "Lote 3x Seiko eBay #127730961092 • Rastreio DHL: 1998979684 (Comprado em 15/03/2026)",
+                    condition = "Vintage (Em Restauração)",
                     movementType = "Automático",
-                    movementCaliber = "Seiko Calibre 6309",
-                    caseMaterial = "Aço Inoxidável 36mm",
-                    strapMaterial = "Pulseira original Seiko em Aço",
-                    caseDiameterMm = 36.0,
-                    waterResistance = "Resistente a respingos",
-                    dialColor = "Prateado com textura xadrez e det. dourados",
+                    movementCaliber = "Seiko Calibre 7009",
+                    caseMaterial = "Aço Inoxidável",
+                    strapMaterial = "Pulseira de Aço Expansível (Fixoflex)",
+                    caseDiameterMm = 37.0,
+                    waterResistance = "Resistente a respingos (3 bar)",
+                    dialColor = "Branco / Prata Sunburst (Dia/Data)",
                     boxAndPapers = false,
                     imageUri = "android.resource://com.example/drawable/seiko_presage_1785946338262",
-                    notes = "Compra no eBay (GBP 37,41 + Imposto R$ 30,61 + frete + revisão Cesar R$ 175 = R$ 500). Mostrador diferenciado com textura e marcadores dourados, calendário bilíngue JUE 27."
+                    notes = "★ PRIORIDADE 1 DO LOTE: Seiko 5 automático clássico com calendário duplo dia/data. Custo lote pro-rata: R$ 450 + Peças R$ 160 + Pulseira R$ 20 + Revisão R$ 450 = Custo Total R$ 1.080. Valor de venda estimado no mercado BR: R$ 700 a R$ 900."
                 )
             )
 
             repository.insertMaintenanceLog(
                 MaintenanceLogEntity(
-                    watchId = seikoVintageId,
+                    watchId = seiko5Id,
                     serviceDate = "15/03/2026",
-                    serviceType = "Conserto / Revisão Técnica",
-                    providerName = "Cesar Relojoeiro",
-                    cost = 175.0,
-                    details = "Conserto e revisão técnica completa do movimento automático 6309.",
-                    nextServiceDueDate = "15/03/2029"
+                    serviceType = "Compra de Peças & Pulseira",
+                    providerName = "Fornecedor eBay / Peças",
+                    cost = 180.0, // R$ 160 peças + R$ 20 pulseira
+                    details = "Componentes para restauração (R$ 160) e nova pulseira de aço (R$ 20).",
+                    nextServiceDueDate = "",
+                    orderCode = "EBAY-127730961092"
+                )
+            )
+
+            repository.insertMaintenanceLog(
+                MaintenanceLogEntity(
+                    watchId = seiko5Id,
+                    serviceDate = "20/03/2026",
+                    serviceType = "Revisão Geral & Lubrificação (Orçamento)",
+                    providerName = "Mestre Relojoeiro",
+                    cost = 450.0,
+                    details = "Estimativa de revisão completa do movimento calibre 7009, lubrificação Moebius e polimento suave.",
+                    nextServiceDueDate = "20/03/2029",
+                    orderCode = "REV-7009"
+                )
+            )
+
+            // 2. Seiko Prata Automático (7005)
+            val seikoPrataId = repository.insertWatch(
+                WatchEntity(
+                    brand = "Seiko",
+                    model = "Seiko Automatic Prata Vintage",
+                    referenceNumber = "7005-SILVER",
+                    serialNumber = "EBAY-127730961092-2",
+                    purchaseYear = 2026,
+                    purchaseDateFormatted = "15/03/2026",
+                    purchasePrice = 450.0,
+                    currency = "R$",
+                    estimatedValue = 750.0, // Valor estimado mercado BR (R$ 650 - 850)
+                    provenance = "Lote 3x Seiko eBay #127730961092 • Rastreio DHL: 1998979684 (Comprado em 15/03/2026)",
+                    condition = "Vintage (Em Restauração)",
+                    movementType = "Automático",
+                    movementCaliber = "Seiko Calibre 7005",
+                    caseMaterial = "Aço Inoxidável",
+                    strapMaterial = "Pulseira de Aço Articulada (Beads of Rice)",
+                    caseDiameterMm = 36.0,
+                    waterResistance = "Resistente a respingos",
+                    dialColor = "Prata Sunburst Vintage",
+                    boxAndPapers = false,
+                    imageUri = "android.resource://com.example/drawable/seiko_presage_1785946338262",
+                    notes = "★ PRIORIDADE 2 DO LOTE: Mostrador prata clássico. Opção de colocar pulseira de couro preta (R$ 20). Custo base lote: R$ 450 + Peças/Pulseira R$ 180 + Revisão R$ 450 = Custo Total R$ 1.080."
+                )
+            )
+
+            repository.insertMaintenanceLog(
+                MaintenanceLogEntity(
+                    watchId = seikoPrataId,
+                    serviceDate = "15/03/2026",
+                    serviceType = "Peças & Pulseira de Couro Preta",
+                    providerName = "Loja de Peças / eBay",
+                    cost = 180.0,
+                    details = "Peças de reposição (R$ 160) + Pulseira de couro genuíno preta (R$ 20).",
+                    nextServiceDueDate = "",
+                    orderCode = "EBAY-127730961092"
+                )
+            )
+
+            repository.insertMaintenanceLog(
+                MaintenanceLogEntity(
+                    watchId = seikoPrataId,
+                    serviceDate = "20/03/2026",
+                    serviceType = "Revisão Periódica (Orçamento)",
+                    providerName = "Oficina Técnica Relojoeira",
+                    cost = 450.0,
+                    details = "Orçamento para revisão e regulagem do movimento 7005.",
+                    nextServiceDueDate = "20/03/2029",
+                    orderCode = "REV-7005"
+                )
+            )
+
+            // 3. Seiko Kinetic SQ Bicolor
+            val seikoKineticId = repository.insertWatch(
+                WatchEntity(
+                    brand = "Seiko",
+                    model = "Seiko Kinetic SQ Bicolor",
+                    referenceNumber = "KINETIC-SQ-BICOLOR",
+                    serialNumber = "EBAY-127730961092-3",
+                    purchaseYear = 2026,
+                    purchaseDateFormatted = "15/03/2026",
+                    purchasePrice = 450.0,
+                    currency = "R$",
+                    estimatedValue = 350.0, // Venda no estado recomendada (R$ 300 - 400)
+                    provenance = "Lote 3x Seiko eBay #127730961092 • Rastreio DHL: 1998979684 (Comprado em 15/03/2026)",
+                    condition = "Vintage / Necessita Reparo",
+                    movementType = "Kinetic (Quartzo com gerador auto)",
+                    movementCaliber = "Seiko Kinetic SQ",
+                    caseMaterial = "Aço Inoxidável com Aro Dourado (Bicolor)",
+                    strapMaterial = "Pulseira Bicolor Aço e Ouro",
+                    caseDiameterMm = 38.0,
+                    waterResistance = "50m",
+                    dialColor = "Preto com Detalhes Dourados",
+                    boxAndPapers = false,
+                    imageUri = "android.resource://com.example/drawable/seiko_presage_1785946338262",
+                    notes = "⚠️ ESTRATÉGIA DE REDUÇÃO DE RISCO: Recomendado vender no estado (R$ 300 ~ R$ 400) para recuperar caixa e reduzir o custo real dos 2 Seiko automáticos para R$ 800 - R$ 900. Evita gastar R$ 320 em acumulador (Orçamento Cláudio Pinheiro R$ 320 + R$ 450 revisão = R$ 770)."
+                )
+            )
+
+            repository.insertMaintenanceLog(
+                MaintenanceLogEntity(
+                    watchId = seikoKineticId,
+                    serviceDate = "15/03/2026",
+                    serviceType = "Orçamento Acumulador / Troca de Capacitor",
+                    providerName = "Cláudio Pinheiro Relojoeiro",
+                    cost = 320.0,
+                    details = "Orçamento para troca de acumulador Kinetic por Cláudio Pinheiro (Ref R$ 407 original).",
+                    nextServiceDueDate = "",
+                    orderCode = "ORC-CLAUDIO-320"
+                )
+            )
+
+            repository.insertMaintenanceLog(
+                MaintenanceLogEntity(
+                    watchId = seikoKineticId,
+                    serviceDate = "20/03/2026",
+                    serviceType = "Revisão Técnica Estimada",
+                    providerName = "Oficina de Relojoaria",
+                    cost = 450.0,
+                    details = "Estimativa de revisão completa se optar por restaurar.",
+                    nextServiceDueDate = "",
+                    orderCode = "REV-KINETIC"
                 )
             )
         }

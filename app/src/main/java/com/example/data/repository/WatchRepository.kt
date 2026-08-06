@@ -108,6 +108,38 @@ class WatchRepository(
         watchDao.deleteAllWatches()
     }
 
+    suspend fun pushAllToSupabase(): Result<String> {
+        return try {
+            val localWatches = watchDao.getAllWatchesList()
+            val localLogs = maintenanceDao.getAllLogsList()
+
+            var pushedWatchCount = 0
+            localWatches.forEach { watch ->
+                val dto = watch.toSupabaseDto()
+                SupabaseClient.api.insertWatch(
+                    apiKey = SupabaseClient.DEFAULT_ANON_KEY,
+                    auth = SupabaseClient.authHeader(),
+                    watch = dto
+                )
+                pushedWatchCount++
+            }
+
+            localLogs.forEach { log ->
+                val dto = log.toSupabaseDto()
+                SupabaseClient.api.insertMaintenanceLog(
+                    apiKey = SupabaseClient.DEFAULT_ANON_KEY,
+                    auth = SupabaseClient.authHeader(),
+                    log = dto
+                )
+            }
+
+            Result.success("Sucesso! $pushedWatchCount relógios enviados ao Supabase.")
+        } catch (e: Exception) {
+            Log.e("WatchRepository", "Error pushing all data to Supabase", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun syncWithSupabase(): Result<String> {
         return try {
             val remoteWatches = SupabaseClient.api.getWatches(

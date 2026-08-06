@@ -84,6 +84,7 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
                 },
                 syncStatus = syncStatus,
                 onSyncSupabaseClick = { viewModel.syncWithSupabase() },
+                onPushSupabaseClick = { viewModel.pushAllToSupabase() },
                 onClearAllDataClick = { viewModel.clearAllData() },
                 onLoadSampleDataClick = { viewModel.seedInitialData() }
             )

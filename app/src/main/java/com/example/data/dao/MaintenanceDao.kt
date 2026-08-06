@@ -23,4 +23,7 @@ interface MaintenanceDao {
 
     @Query("DELETE FROM maintenance_logs")
     suspend fun deleteAllLogs()
+
+    @Query("SELECT * FROM maintenance_logs")
+    suspend fun getAllLogsList(): List<MaintenanceLogEntity>
 }

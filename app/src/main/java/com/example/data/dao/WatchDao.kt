@@ -33,6 +33,9 @@ interface WatchDao {
     @Query("DELETE FROM watches")
     suspend fun deleteAllWatches()
 
+    @Query("SELECT * FROM watches")
+    suspend fun getAllWatchesList(): List<WatchEntity>
+
     @Query("SELECT COUNT(*) FROM watches")
     fun getWatchCount(): Flow<Int>
 }
