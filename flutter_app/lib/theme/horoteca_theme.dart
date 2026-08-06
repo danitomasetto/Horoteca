@@ -1,38 +1,56 @@
 import 'package:flutter/material.dart';
 
 abstract final class HorotecaTheme {
-  static const _ink = Color(0xFF13231E);
-  static const _bronze = Color(0xFFA7793D);
-  static const _paper = Color(0xFFF5F1E8);
+  static const navy = Color(0xFF071426);
+  static const navySurface = Color(0xFF10233D);
+  static const navySoft = Color(0xFF18314F);
+  static const gold = Color(0xFFFFC533);
+  static const goldSoft = Color(0xFFFFDD73);
+  static const text = Color(0xFFF6F8FC);
+  static const muted = Color(0xFF9EADC2);
 
-  static ThemeData get light {
+  static ThemeData get dark {
     final scheme = ColorScheme.fromSeed(
-      seedColor: _ink,
-      primary: _ink,
-      secondary: _bronze,
-      surface: _paper,
+      brightness: Brightness.dark,
+      seedColor: gold,
+      primary: gold,
+      secondary: goldSoft,
+      surface: navySurface,
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: _paper,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: navy,
       appBarTheme: const AppBarTheme(
-        backgroundColor: _paper,
-        foregroundColor: _ink,
+        backgroundColor: navySurface,
+        foregroundColor: text,
         centerTitle: false,
+        elevation: 0,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.72),
+        fillColor: navySurface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: navySoft),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: navySoft),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: gold),
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white.withValues(alpha: 0.78),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        color: navySurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: gold.withValues(alpha: .28)),
+        ),
       ),
     );
   }
