@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/horoteca_theme.dart';
+import '../../services/app_update_service.dart';
 import 'watch.dart';
 import 'watch_repository.dart';
+import 'watch_photos.dart';
 
 class CollectionScreen extends StatefulWidget {
   const CollectionScreen({super.key});
@@ -45,6 +47,14 @@ class _CollectionScreenState extends State<CollectionScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'História das marcas',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BrandsScreen()),
+            ),
+            icon: const Icon(Icons.menu_book_outlined,
+                color: HorotecaTheme.gold),
+          ),
+          IconButton(
               tooltip: 'Atualizar coleção',
               onPressed: _reload,
               icon: const Icon(Icons.sync, color: HorotecaTheme.gold)),
@@ -53,9 +63,19 @@ class _CollectionScreenState extends State<CollectionScreen> {
             onSelected: (value) {
               if (value == 'logout') {
                 Supabase.instance.client.auth.signOut();
+              } else if (value == 'update') {
+                AppUpdateService().check(context);
               }
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'update',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.system_update_alt),
+                  title: Text('Atualizar aplicativo'),
+                ),
+              ),
               PopupMenuItem(value: 'logout', child: Text('Sair')),
             ],
           ),
@@ -368,8 +388,18 @@ class WatchDetailScreen extends StatelessWidget {
                     icon: Icons.receipt_long_outlined,
                     title: 'Ficha de Cadastro & Procedência',
                     rows: [
-                      ('Valor pago', _money(watch.purchasePrice ?? 0)),
+                      ('Código Horoteca', watch.horotecaCode ?? 'Não informado'),
+                      ('Pedido de origem', watch.orderNumber ?? 'Não informado'),
+                      ('Item do pedido', watch.orderItemNumber?.toString().padLeft(2, '0') ?? 'Não informado'),
+                      ('Marketplace', watch.marketplace ?? 'Não informado'),
+                      ('Item do anúncio', watch.marketplaceItemId ?? 'Não informado'),
+                      ('Vendedor', watch.sellerName ?? 'Não informado'),
+                      ('Valor da compra', _originalMoney(watch)),
+                      ('Total cobrado em reais', _money(watch.purchaseTotalBrl ?? watch.purchasePrice ?? 0)),
+                      ('Custo total investido', _money(watch.totalInvested)),
                       ('Valor estimado', _money(watch.estimatedValue ?? 0)),
+                      ('Resultado potencial', _money((watch.estimatedValue ?? 0) - watch.totalInvested)),
+                      ('Pagamento', watch.paymentMethod ?? 'Não informado'),
                       ('Ano', watch.year?.toString() ?? 'Não informado'),
                       ('Estado', watch.condition ?? 'Não informado'),
                     ],
@@ -393,6 +423,29 @@ class WatchDetailScreen extends StatelessWidget {
                       rows: [('Notas', watch.notes!)],
                     ),
                   ],
+                  const SizedBox(height: 14),
+                  FutureBuilder<List<WatchHistory>>(
+                    future: WatchRepository().history(watch.id),
+                    builder: (context, snapshot) {
+                      final history = snapshot.data ?? const <WatchHistory>[];
+                      return _DetailCard(
+                        icon: Icons.history,
+                        title: 'Histórico & Gastos',
+                        rows: history.isEmpty
+                            ? const [('Histórico', 'Nenhum lançamento registrado')]
+                            : history
+                                .map((item) => (
+                                      item.description,
+                                      item.amountBrl == null
+                                          ? item.type
+                                          : '${item.type} • ${_money(item.amountBrl!)}',
+                                    ))
+                                .toList(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  WatchPhotos(watchId: watch.id),
                 ],
               ),
             ),
@@ -400,6 +453,66 @@ class WatchDetailScreen extends StatelessWidget {
         ),
       );
 }
+
+class BrandsScreen extends StatelessWidget {
+  const BrandsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: const Text('História das Marcas',
+              style: TextStyle(
+                  color: HorotecaTheme.gold, fontWeight: FontWeight.w800)),
+        ),
+        body: FutureBuilder<List<BrandProfile>>(
+          future: WatchRepository().brands(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                  child: CircularProgressIndicator(color: HorotecaTheme.gold));
+            }
+            final brands = snapshot.data ?? const <BrandProfile>[];
+            if (brands.isEmpty) {
+              return const Center(child: Text('Nenhuma marca cadastrada.'));
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: brands.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final brand = brands[index];
+                return Card(
+                  child: ExpansionTile(
+                    leading: const Icon(Icons.history_edu_outlined,
+                        color: HorotecaTheme.gold),
+                    title: Text(brand.name,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text([
+                      brand.country,
+                      brand.foundedYear?.toString(),
+                    ].whereType<String>().join(' • ')),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    children: [
+                      if (brand.founder?.isNotEmpty == true)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Fundador: ${brand.founder}'),
+                        ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(brand.history?.isNotEmpty == true
+                            ? brand.history!
+                            : 'História ainda não cadastrada.'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      );
 
 class _DetailCard extends StatelessWidget {
   const _DetailCard({required this.icon, required this.title, required this.rows});
@@ -510,4 +623,10 @@ class _Message extends StatelessWidget {
 String _money(double value) {
   final formatted = value.toStringAsFixed(2).replaceAll('.', ',');
   return 'R\$ $formatted';
+}
+
+String _originalMoney(Watch watch) {
+  final value = watch.purchaseAmountOriginal;
+  if (value == null) return _money(watch.purchasePrice ?? 0);
+  return '${watch.purchaseCurrency ?? ''} ${value.toStringAsFixed(2).replaceAll('.', ',')}'.trim();
 }

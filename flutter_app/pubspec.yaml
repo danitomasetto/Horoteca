@@ -1,7 +1,7 @@
 name: horoteca
 description: Catálogo pessoal de relógios para Android e iOS.
 publish_to: none
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: 2.10.0
+  open_filex: 4.7.0
+  package_info_plus: 8.3.0
+  path_provider: 2.1.5
+  image_picker: 1.1.2
 
 dev_dependencies:
   flutter_test:
