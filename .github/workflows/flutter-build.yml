@@ -28,10 +28,7 @@ jobs:
       - name: Generate platform projects
         run: flutter create --platforms android,ios --org br.com.tomasetto --project-name horoteca .
       - run: flutter pub get
-      - name: Check Dart formatting
-        run: |
-          dart format lib test
-          git diff --exit-code -- lib test
+      - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
