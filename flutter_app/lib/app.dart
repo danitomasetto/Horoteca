@@ -13,7 +13,7 @@ class HorotecaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Horoteca',
       debugShowCheckedModeBanner: false,
-      theme: HorotecaTheme.light,
+      theme: HorotecaTheme.dark,
       home: const AuthGate(),
     );
   }
