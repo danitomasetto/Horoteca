@@ -26,5 +26,6 @@ data class MaintenanceLogEntity(
     val cost: Double = 0.0,
     val details: String = "",
     val nextServiceDueDate: String = "",
+    val orderCode: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

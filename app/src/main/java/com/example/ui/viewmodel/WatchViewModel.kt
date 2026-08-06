@@ -67,6 +67,17 @@ class WatchViewModel(private val repository: WatchRepository) : ViewModel() {
             initialValue = null
         )
 
+    private val _syncStatus = MutableStateFlow<String?>(null)
+    val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
+
+    fun syncWithSupabase() {
+        viewModelScope.launch {
+            _syncStatus.value = "Sincronizando..."
+            val result = repository.syncWithSupabase()
+            _syncStatus.value = result.getOrElse { "Falha na sincronização: ${it.localizedMessage}" }
+        }
+    }
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }

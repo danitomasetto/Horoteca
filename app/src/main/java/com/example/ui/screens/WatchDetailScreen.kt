@@ -262,24 +262,24 @@ fun WatchDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Valor Pago", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(formattedPrice, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                                Text("Valor Pago", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text(formattedPrice, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                             }
                             Column {
-                                Text("Valor Estimado Atual", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(formattedEst, style = MaterialTheme.typography.titleMedium, color = GoldLight)
+                                Text("Valor Estimado Atual", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text(formattedEst, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = GoldLight)
                             }
                             Column {
-                                Text("Ano de Compra", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${watch.purchaseYear}", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                                Text("Ano de Compra", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text("${watch.purchaseYear}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         if (watch.provenance.isNotEmpty()) {
-                            Text("Procedência / Origem / Vendedor:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(watch.provenance, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Procedência / Origem / Vendedor:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFFCBD5E1))
+                            Text(watch.provenance, style = MaterialTheme.typography.bodyMedium, color = Color.White)
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
@@ -289,7 +289,7 @@ fun WatchDetailScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Estado: ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Estado: ", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF94A3B8))
                                 Text(watch.condition, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = GoldLight)
                             }
 
@@ -301,7 +301,7 @@ fun WatchDetailScreen(
                                 Text(
                                     text = if (watch.boxAndPapers) "✓ Caixa & Papéis Originais" else "Apenas o Relógio",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = if (watch.boxAndPapers) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (watch.boxAndPapers) StatusGreen else Color(0xFFE2E8F0),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
@@ -311,8 +311,8 @@ fun WatchDetailScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Observações do Colecionador:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(watch.notes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Observações do Colecionador:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = Color(0xFFCBD5E1))
+                            Text(watch.notes, style = MaterialTheme.typography.bodyMedium, color = Color.White)
                         }
                     }
                 }
@@ -347,6 +347,8 @@ fun WatchDetailScreen(
                 }
 
                 // Histórico de Manutenção Card
+                val totalMaintenanceCost = logs.sumOf { it.cost }
+
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = HorologyNavySurface),
@@ -362,7 +364,7 @@ fun WatchDetailScreen(
                                 Icon(Icons.Default.Build, contentDescription = null, tint = GoldPrimary)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Histórico de Manutenção (${logs.size})",
+                                    text = "Histórico de Manutenção & Gastos (${logs.size})",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = GoldPrimary
                                 )
@@ -380,9 +382,46 @@ fun WatchDetailScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        // Total Cost Summary Banner
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "TOTAL GASTO EM MANUTENÇÃO",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "${logs.size} serviço(s) / peça(s) registrada(s)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Text(
+                                    text = currencyFormat.format(totalMaintenanceCost),
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                    color = StatusGreen
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         if (logs.isEmpty()) {
                             Text(
-                                text = "Nenhuma manutenção ou revisão registrada ainda.",
+                                text = "Nenhuma manutenção ou gasto com peças registrado ainda.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 8.dp)
@@ -404,7 +443,8 @@ fun WatchDetailScreen(
                                                 Text(
                                                     text = "🛠️ ${log.serviceType}",
                                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                                    color = GoldLight
+                                                    color = GoldLight,
+                                                    modifier = Modifier.weight(1f)
                                                 )
                                                 Text(
                                                     text = log.serviceDate,
@@ -413,15 +453,55 @@ fun WatchDetailScreen(
                                                 )
                                             }
 
-                                            Spacer(modifier = Modifier.height(4.dp))
+                                            if (log.orderCode.isNotEmpty()) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Surface(
+                                                    color = GoldPrimary.copy(alpha = 0.15f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.3f))
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.ConfirmationNumber,
+                                                            contentDescription = null,
+                                                            tint = GoldPrimary,
+                                                            modifier = Modifier.size(12.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text(
+                                                            text = "Pedido / eBay: ${log.orderCode}",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                            color = GoldPrimary
+                                                        )
+                                                    }
+                                                }
+                                            }
 
-                                            Text(
-                                                text = "Relojoeiro: ${log.providerName} • Custo: ${currencyFormat.format(log.cost)}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Relojoeiro/Loja: ${log.providerName.ifEmpty { "N/I" }}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+
+                                                Text(
+                                                    text = "Custo: ${currencyFormat.format(log.cost)}",
+                                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                                    color = StatusGreen
+                                                )
+                                            }
 
                                             if (log.details.isNotEmpty()) {
+                                                Spacer(modifier = Modifier.height(4.dp))
                                                 Text(
                                                     text = log.details,
                                                     style = MaterialTheme.typography.bodySmall,

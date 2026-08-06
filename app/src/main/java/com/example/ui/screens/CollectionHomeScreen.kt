@@ -43,7 +43,9 @@ fun CollectionHomeScreen(
     onAddWatchClick: () -> Unit,
     onImportDocsClick: () -> Unit,
     onOpenWebShowcaseClick: () -> Unit,
-    onOpenBrandHistoryClick: (String?) -> Unit
+    onOpenBrandHistoryClick: (String?) -> Unit,
+    syncStatus: String? = null,
+    onSyncSupabaseClick: () -> Unit = {}
 ) {
     var isFabExpanded by remember { mutableStateOf(false) }
     val ptBr = Locale("pt", "BR")
@@ -76,6 +78,13 @@ fun CollectionHomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onSyncSupabaseClick) {
+                        Icon(
+                            imageVector = Icons.Default.CloudSync,
+                            contentDescription = "Sincronizar Supabase",
+                            tint = GoldPrimary
+                        )
+                    }
                     IconButton(onClick = { onOpenBrandHistoryClick(selectedBrandFilter) }) {
                         Icon(
                             imageVector = Icons.Default.MenuBook,
@@ -158,6 +167,25 @@ fun CollectionHomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            syncStatus?.let { status ->
+                Surface(
+                    color = HorologyNavySurface,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.CloudDone, contentDescription = null, modifier = Modifier.size(18.dp), tint = GoldPrimary)
+                        Text(text = status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            }
+
             // Stats Banner Header
             Card(
                 shape = RoundedCornerShape(16.dp),

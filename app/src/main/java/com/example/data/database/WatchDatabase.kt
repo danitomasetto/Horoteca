@@ -11,7 +11,7 @@ import com.example.data.model.WatchEntity
 
 @Database(
     entities = [WatchEntity::class, MaintenanceLogEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class WatchDatabase : RoomDatabase() {

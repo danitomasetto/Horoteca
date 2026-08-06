@@ -55,6 +55,7 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val brandFilter by viewModel.brandFilter.collectAsState()
     val selectedWatch by viewModel.selectedWatch.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
@@ -80,7 +81,9 @@ fun WatchAppNavigation(viewModel: WatchViewModel) {
                 onOpenBrandHistoryClick = { brandName ->
                     val route = if (!brandName.isNullOrBlank()) "brand_history?brand=$brandName" else "brand_history"
                     navController.navigate(route)
-                }
+                },
+                syncStatus = syncStatus,
+                onSyncSupabaseClick = { viewModel.syncWithSupabase() }
             )
         }
 
