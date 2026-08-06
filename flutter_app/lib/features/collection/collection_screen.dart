@@ -66,7 +66,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
               itemCount: watches.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) => _WatchCard(watch: watches[index]),
+              itemBuilder: (context, index) =>
+                  _WatchCard(watch: watches[index]),
             ),
           );
         },
@@ -154,7 +155,8 @@ class _Message extends StatelessWidget {
             const SizedBox(height: 8),
             Text(detail, textAlign: TextAlign.center),
             const SizedBox(height: 18),
-            OutlinedButton(onPressed: action, child: const Text('Tentar novamente')),
+            OutlinedButton(
+                onPressed: action, child: const Text('Tentar novamente')),
           ],
         ),
       ),
