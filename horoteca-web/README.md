@@ -1,6 +1,7 @@
 # Horoteca Web
 
-Pagina estatica de consulta da colecao Horoteca.
+Página estática de consulta da coleção Horoteca, com login e acesso à ficha
+completa, custos estruturados, histórico e fontes de cada peça.
 
 Publicacao inicial:
 

@@ -438,6 +438,11 @@
         watches: [],
         histories: [],
         photos: [],
+        expenses: [],
+        allocations: [],
+        acquisitions: [],
+        acquisitionItems: [],
+        sources: [],
         sort: "code",
       };
 
@@ -503,15 +508,30 @@
 
       async function loadData() {
         status(els.appStatus, "Carregando colecao...");
-        const [watches, histories, photos] = await Promise.all([
+        const [watches, events, legacyHistory, photos, expenses, allocations, acquisitions, acquisitionItems, sources] = await Promise.all([
           request("/rest/v1/watches?select=*&order=horoteca_code.asc"),
+          request("/rest/v1/watch_events?select=*&order=event_date.desc"),
           request("/rest/v1/maintenance_logs?select=*&order=event_date.desc"),
           request(
             "/rest/v1/watch_photos?select=watch_id,storage_path,caption,is_cover,sort_order&order=sort_order.asc",
           ).catch(() => []),
+          request("/rest/v1/expenses?select=*"),
+          request("/rest/v1/expense_allocations?select=*"),
+          request("/rest/v1/acquisitions?select=*"),
+          request("/rest/v1/acquisition_items?select=*"),
+          request("/rest/v1/watch_sources?select=*"),
         ]);
+        state.expenses = expenses;
+        state.allocations = allocations;
+        state.acquisitions = acquisitions;
+        state.acquisitionItems = acquisitionItems;
+        state.sources = sources;
+        const watchesWithEvents = new Set(events.map((event) => event.watch_id));
+        state.histories = [
+          ...events,
+          ...legacyHistory.filter((item) => !watchesWithEvents.has(item.watch_id)),
+        ].map(normalizeHistory);
         state.watches = watches.map(normalizeWatch);
-        state.histories = histories.map(normalizeHistory);
         state.photos = photos;
         buildBrandFilter();
         render();
@@ -519,14 +539,31 @@
       }
 
       function normalizeWatch(row) {
-        const historyTotal = () =>
-          state.histories
-            .filter((item) => item.watch_id === row.id)
-            .reduce((sum, item) => sum + (item.amount_brl || item.cost || 0), 0);
+        const directExpenses = () => state.expenses.filter(
+          (item) => item.watch_id === row.id && !item.is_shared,
+        );
+        const allocatedExpenses = () => state.allocations.filter(
+          (item) => item.watch_id === row.id,
+        );
+        const item = state.acquisitionItems.find((value) => value.watch_id === row.id);
+        const acquisition = item
+          ? state.acquisitions.find((value) => value.id === item.acquisition_id)
+          : null;
         return {
           ...row,
+          acquisition,
+          acquisitionItem: item,
+          sources: state.sources.filter((source) => source.watch_id === row.id),
+          expenses: directExpenses(),
+          allocations: allocatedExpenses(),
           totalInvested() {
-            return historyTotal() || row.purchase_total_brl || row.purchase_price || 0;
+            const direct = directExpenses().reduce(
+              (sum, item) => sum + Number(item.amount_brl || 0), 0,
+            );
+            const allocated = allocatedExpenses().reduce(
+              (sum, item) => sum + Number(item.amount_brl_allocated || 0), 0,
+            );
+            return direct + allocated || row.purchase_total_brl || row.purchase_price || 0;
           },
           valueEstimate() {
             return row.estimated_value || 0;
@@ -628,19 +665,45 @@
             </div>
           </div>
           <div class="card-body">
-            ${row("Pedido", watch.order_number || "Nao informado")}
-            ${row("Item eBay", watch.marketplace_item_id || "Nao informado")}
-            ${row("Vendedor", watch.seller_name || "Nao informado")}
+            ${row("Código Horoteca", watch.horoteca_code || "Não informado")}
+            ${row("Referência", watch.reference_number || "Não informada")}
+            ${row("Número de série", watch.serial_number || "Não informado")}
+            ${row("Ano ou período", watchPeriod(watch))}
+            ${row("Pedido", watch.acquisition?.order_number || watch.order_number || "Não informado")}
+            ${row("Item do pedido", watch.acquisitionItem?.item_sequence || watch.order_item_number || "Não informado")}
+            ${row("Marketplace", watch.acquisition?.marketplace || watch.marketplace || "Não informado")}
+            ${row("Item do anúncio", watch.acquisitionItem?.marketplace_item_id || watch.marketplace_item_id || "Não informado")}
+            ${row("Vendedor", watch.acquisition?.seller_name || watch.seller_name || "Não informado")}
+            ${row("Data da compra", parseDate(watch.acquisition?.purchase_date || watch.purchase_date) || "Não informada")}
+            ${row("Pagamento dos impostos", parseDate(watch.acquisition?.taxes_payment_date) || "Não informado")}
+            ${row("Recebimento", parseDate(watch.acquisition?.received_date) || "Não informado")}
             ${row("Compra", originalMoney(watch))}
             ${row("Custo real", money.format(total))}
-            ${row("Valor estimado", estimated ? money.format(estimated) : "Nao informado")}
+            ${row("Valor estimado", estimated ? money.format(estimated) : "Não informado")}
             ${row("Resultado", `<span class="${result >= 0 ? "result-ok" : "result-bad"}">${money.format(result)}</span>`)}
-            ${row("Estado", watch.condition || "Nao informado")}
+            ${row("Estado", watch.condition || "Não informado")}
+            ${row("Funcionamento", watch.function_status || "Não informado")}
+            ${row("Movimento", [watch.movement_type, watch.movement_caliber].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Caixa", [watch.case_material, watch.case_finish, watch.case_shape].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Mostrador", watch.dial_description || watch.dial_color || "Não informado")}
+            ${row("Pulseira", watch.strap_description || watch.strap_material || "Não informada")}
           </div>
           <details>
-            <summary>Historico e gastos (${history.length})</summary>
+            <summary>Custos estruturados (${watch.expenses.length + watch.allocations.length})</summary>
             <div class="history">
-              ${history.length ? history.map(renderHistory).join("") : '<div class="history-item"><p>Nenhum historico registrado.</p></div>'}
+              ${renderExpenses(watch)}
+            </div>
+          </details>
+          <details>
+            <summary>Histórico e manutenções (${history.length})</summary>
+            <div class="history">
+              ${history.length ? history.map(renderHistory).join("") : '<div class="history-item"><p>Nenhum histórico registrado.</p></div>'}
+            </div>
+          </details>
+          <details>
+            <summary>Fontes e evidências (${watch.sources.length})</summary>
+            <div class="history">
+              ${watch.sources.length ? watch.sources.map(renderSource).join("") : '<div class="history-item"><p>Nenhuma fonte estruturada.</p></div>'}
             </div>
           </details>
         `;
@@ -661,6 +724,49 @@
             <p>${escapeHtml(item.description || "Historico")} ${item.amount_brl ? `- ${money.format(item.amount_brl)}` : ""}</p>
           </div>
         `;
+      }
+
+      function renderExpenses(watch) {
+        const direct = watch.expenses.map((item) => ({
+          label: item.description || item.category,
+          amount: item.amount_brl,
+          method: item.allocation_method,
+        }));
+        const allocated = watch.allocations.map((item) => ({
+          label: "Despesa rateada",
+          amount: item.amount_brl_allocated,
+          method: item.allocation_basis,
+        }));
+        const values = [...direct, ...allocated];
+        return values.length
+          ? values.map((item) => `<div class="history-item"><strong>${escapeHtml(item.label)}</strong><p>${item.amount == null ? "Valor em reais não informado" : money.format(item.amount)}${item.method ? ` • ${escapeHtml(item.method)}` : ""}</p></div>`).join("")
+          : '<div class="history-item"><p>Nenhuma despesa estruturada.</p></div>';
+      }
+
+      function renderSource(source) {
+        return `<div class="history-item"><strong>${escapeHtml(source.source_name || source.source_type || "Fonte")}</strong><p>${escapeHtml(evidenceLabel(source.evidence_classification))}${source.confidence_percent == null ? "" : ` • ${source.confidence_percent}%`}</p></div>`;
+      }
+
+      function evidenceLabel(value) {
+        return ({
+          document_confirmed: "Confirmado por documento",
+          seller_statement: "Declaração do vendedor",
+          visual_observation: "Observação visual",
+          researched: "Pesquisado",
+          estimated: "Estimado",
+          missing: "Ausente",
+          inconsistent: "Inconsistente",
+        })[value] || value || "Não classificado";
+      }
+
+      function watchPeriod(watch) {
+        if (watch.manufacture_year) {
+          return `${watch.manufacture_year}${watch.manufacture_year_is_estimated ? " (estimado)" : ""}`;
+        }
+        if (watch.production_period_start_year && watch.production_period_end_year) {
+          return `${watch.production_period_start_year}–${watch.production_period_end_year}`;
+        }
+        return watch.production_period_start_year || watch.production_period_end_year || "Não informado";
       }
 
       function row(label, value) {
