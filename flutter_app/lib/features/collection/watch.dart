@@ -85,11 +85,25 @@ class Watch {
     this.accuracyNotes,
     this.knownDefects,
     this.waterResistance,
+    this.watchType,
+    this.displayType,
+    this.intendedAudience,
+    this.bezelType,
+    this.bezelMaterial,
+    this.bezelColor,
+    this.strapColor,
+    this.hasOriginalBox,
+    this.hasOriginalPapers,
+    this.includedAccessories = const [],
+    this.isCustomized,
+    this.customizationDescription,
+    this.features = const [],
     this.sourceDocumentUrl,
     this.modelProfile,
     this.caliberProfile,
     this.acquisition,
     this.sources = const [],
+    this.claims = const [],
     this.totalInvested = 0,
     this.maintenanceCount = 0,
   });
@@ -120,10 +134,16 @@ class Watch {
   final String? dialOriginality, componentOriginality;
   final double? accuracySecondsPerDay;
   final String? accuracyNotes, knownDefects, waterResistance, sourceDocumentUrl;
+  final String? watchType, displayType, intendedAudience;
+  final String? bezelType, bezelMaterial, bezelColor, strapColor;
+  final bool? hasOriginalBox, hasOriginalPapers, isCustomized;
+  final List<String> includedAccessories, features;
+  final String? customizationDescription;
   final WatchModelProfile? modelProfile;
   final CaliberProfile? caliberProfile;
   final Acquisition? acquisition;
   final List<WatchSource> sources;
+  final List<WatchClaim> claims;
   final double totalInvested;
   final int maintenanceCount;
 
@@ -193,6 +213,19 @@ class Watch {
         accuracyNotes: json['accuracy_notes'] as String?,
         knownDefects: json['known_defects'] as String?,
         waterResistance: json['water_resistance'] as String?,
+        watchType: json['watch_type'] as String?,
+        displayType: json['display_type'] as String?,
+        intendedAudience: json['intended_audience'] as String?,
+        bezelType: json['bezel_type'] as String?,
+        bezelMaterial: json['bezel_material'] as String?,
+        bezelColor: json['bezel_color'] as String?,
+        strapColor: json['strap_color'] as String?,
+        hasOriginalBox: json['has_original_box'] as bool?,
+        hasOriginalPapers: json['has_original_papers'] as bool?,
+        includedAccessories: _strings(json['included_accessories']),
+        isCustomized: json['is_customized'] as bool?,
+        customizationDescription: json['customization_description'] as String?,
+        features: _strings(json['features']),
         sourceDocumentUrl: json['source_document_url'] as String?,
       );
 
@@ -203,6 +236,7 @@ class Watch {
     CaliberProfile? caliberProfile,
     Acquisition? acquisition,
     List<WatchSource> sources = const [],
+    List<WatchClaim> claims = const [],
   }) => Watch(
         id: id, brand: brand, model: model, referenceNumber: referenceNumber,
         serialNumber: serialNumber, caseCode: caseCode, dialCode: dialCode,
@@ -233,9 +267,17 @@ class Watch {
         componentOriginality: componentOriginality,
         accuracySecondsPerDay: accuracySecondsPerDay, accuracyNotes: accuracyNotes,
         knownDefects: knownDefects, waterResistance: waterResistance,
+        watchType: watchType, displayType: displayType,
+        intendedAudience: intendedAudience, bezelType: bezelType,
+        bezelMaterial: bezelMaterial, bezelColor: bezelColor,
+        strapColor: strapColor, hasOriginalBox: hasOriginalBox,
+        hasOriginalPapers: hasOriginalPapers,
+        includedAccessories: includedAccessories, isCustomized: isCustomized,
+        customizationDescription: customizationDescription,
+        features: features,
         sourceDocumentUrl: sourceDocumentUrl, modelProfile: modelProfile,
         caliberProfile: caliberProfile, acquisition: acquisition,
-        sources: sources, totalInvested: totalInvested,
+        sources: sources, claims: claims, totalInvested: totalInvested,
         maintenanceCount: maintenanceCount,
       );
 }
@@ -245,15 +287,26 @@ class Acquisition {
     this.orderNumber, this.marketplaceItemId, this.itemSequence,
     this.visualPosition, this.purchaseDate, this.purchasePaymentDate,
     this.taxesPaymentDate, this.shippedDate, this.receivedDate,
+    this.estimatedDeliveryDate,
     this.paymentMethod, this.carrier, this.trackingNumber,
-    this.sourceDocumentUrl, this.notes});
+    this.sourceDocumentUrl, this.sourceDocumentName, this.listingTitle,
+    this.listingUrl, this.listingCategory, this.sellerConditionLabel,
+    this.sellerConditionDescription, this.listingQuantity,
+    this.listingLanguage, this.listingSpecifics = const {},
+    this.listingCapturedAt, this.notes});
   final int id;
   final String? marketplace, sellerName, orderNumber, marketplaceItemId;
   final int? itemSequence;
   final String? visualPosition;
   final DateTime? purchaseDate, purchasePaymentDate, taxesPaymentDate;
   final DateTime? shippedDate, receivedDate;
-  final String? paymentMethod, carrier, trackingNumber, sourceDocumentUrl, notes;
+  final DateTime? estimatedDeliveryDate, listingCapturedAt;
+  final String? paymentMethod, carrier, trackingNumber, sourceDocumentUrl;
+  final String? sourceDocumentName, listingTitle, listingUrl, listingCategory;
+  final String? sellerConditionLabel, sellerConditionDescription;
+  final int? listingQuantity;
+  final String? listingLanguage, notes;
+  final Map<String, dynamic> listingSpecifics;
 
   factory Acquisition.fromJson(Map<String, dynamic> value, Map<String, dynamic> item) => Acquisition(
         id: (value['id'] as num).toInt(),
@@ -268,10 +321,23 @@ class Acquisition {
         taxesPaymentDate: parseDatabaseDate(value['taxes_payment_date']),
         shippedDate: parseDatabaseDate(value['shipped_date']),
         receivedDate: parseDatabaseDate(value['received_date']),
+        estimatedDeliveryDate: parseDatabaseDate(value['estimated_delivery_date']),
         paymentMethod: value['payment_method'] as String?,
         carrier: value['carrier'] as String?,
         trackingNumber: value['tracking_number'] as String?,
         sourceDocumentUrl: value['source_document_url'] as String?,
+        sourceDocumentName: value['source_document_name'] as String?,
+        listingTitle: item['listing_title'] as String?,
+        listingUrl: item['listing_url'] as String?,
+        listingCategory: item['listing_category'] as String?,
+        sellerConditionLabel: item['seller_condition_label'] as String?,
+        sellerConditionDescription: item['seller_condition_description'] as String?,
+        listingQuantity: _integer(item['listing_quantity']),
+        listingLanguage: item['listing_language'] as String?,
+        listingSpecifics: Map<String, dynamic>.from(
+          item['listing_specifics'] as Map? ?? const {},
+        ),
+        listingCapturedAt: parseDatabaseDate(item['listing_captured_at']),
         notes: value['notes'] as String?,
       );
 }
@@ -299,11 +365,20 @@ class CaliberProfile {
   const CaliberProfile({this.manufacturer, this.code, this.movementType,
     this.jewels, this.complications = const [], this.productionStartYear,
     this.productionEndYear, this.technicalDescription, this.history,
-    this.historicalImportance, this.reviewedAt});
+    this.historicalImportance, this.frequencyVph, this.powerReserveHours,
+    this.movementDiameterMm, this.movementThicknessMm,
+    this.hasManualWinding, this.hasHackingSeconds,
+    this.quicksetFeatures = const [], this.shockProtection,
+    this.escapementType, this.windingDescription, this.reviewedAt});
   final String? manufacturer, code, movementType, technicalDescription;
   final String? history, historicalImportance;
   final int? jewels, productionStartYear, productionEndYear;
+  final int? frequencyVph;
+  final double? powerReserveHours, movementDiameterMm, movementThicknessMm;
+  final bool? hasManualWinding, hasHackingSeconds;
   final List<String> complications;
+  final List<String> quicksetFeatures;
+  final String? shockProtection, escapementType, windingDescription;
   final DateTime? reviewedAt;
   factory CaliberProfile.fromJson(Map<String, dynamic> json) => CaliberProfile(
         manufacturer: json['manufacturer'] as String?, code: json['caliber_code'] as String?,
@@ -314,7 +389,48 @@ class CaliberProfile {
         technicalDescription: json['technical_description'] as String?,
         history: json['history'] as String?,
         historicalImportance: json['historical_importance'] as String?,
+        frequencyVph: _integer(json['frequency_vph']),
+        powerReserveHours: _number(json['power_reserve_hours']),
+        movementDiameterMm: _number(json['movement_diameter_mm']),
+        movementThicknessMm: _number(json['movement_thickness_mm']),
+        hasManualWinding: json['has_manual_winding'] as bool?,
+        hasHackingSeconds: json['has_hacking_seconds'] as bool?,
+        quicksetFeatures: _strings(json['quickset_features']),
+        shockProtection: json['shock_protection'] as String?,
+        escapementType: json['escapement_type'] as String?,
+        windingDescription: json['winding_description'] as String?,
         reviewedAt: parseDatabaseDate(json['reviewed_at']));
+}
+
+class WatchClaim {
+  const WatchClaim({
+    required this.fieldName,
+    required this.assertedValue,
+    required this.classification,
+    required this.status,
+    this.normalizedValue,
+    this.confidencePercent,
+    this.context,
+    this.notes,
+    this.reviewedAt,
+  });
+
+  final String fieldName, assertedValue, classification, status;
+  final String? normalizedValue, context, notes;
+  final int? confidencePercent;
+  final DateTime? reviewedAt;
+
+  factory WatchClaim.fromJson(Map<String, dynamic> json) => WatchClaim(
+        fieldName: _text(json['field_name']),
+        assertedValue: _text(json['asserted_value']),
+        normalizedValue: json['normalized_value'] as String?,
+        classification: _text(json['evidence_classification']),
+        status: _text(json['verification_status']),
+        confidencePercent: _integer(json['confidence_percent']),
+        context: json['claim_context'] as String?,
+        notes: json['notes'] as String?,
+        reviewedAt: parseDatabaseDate(json['reviewed_at']),
+      );
 }
 
 class WatchSource {
