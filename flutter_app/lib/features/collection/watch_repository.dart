@@ -17,6 +17,7 @@ class WatchRepository {
       _client.from('acquisition_items').select(),
       _client.from('watch_events').select('watch_id, event_type'),
       _client.from('watch_sources').select(),
+      _client.from('watch_claims').select(),
       _client.from('expenses').select('id, watch_id, amount_brl, is_shared'),
       _client.from('expense_allocations').select('watch_id, amount_brl_allocated'),
     ]);
@@ -27,6 +28,7 @@ class WatchRepository {
     final acquisitions = _byId(results[3]);
     final itemsByWatch = _byForeignKey(results[4], 'watch_id');
     final sourcesByWatch = _groupByForeignKey(results[6], 'watch_id');
+    final claimsByWatch = _groupByForeignKey(results[7], 'watch_id');
 
     final maintenanceCounts = <int, int>{};
     for (final row in results[5]) {
@@ -37,14 +39,14 @@ class WatchRepository {
     }
 
     final totals = <int, double>{};
-    for (final row in results[7]) {
+    for (final row in results[8]) {
       final watchId = (row['watch_id'] as num?)?.toInt();
       final amount = (row['amount_brl'] as num?)?.toDouble();
       if (watchId != null && amount != null && row['is_shared'] != true) {
         totals[watchId] = (totals[watchId] ?? 0) + amount;
       }
     }
-    for (final row in results[8]) {
+    for (final row in results[9]) {
       final watchId = (row['watch_id'] as num?)?.toInt();
       final amount = (row['amount_brl_allocated'] as num?)?.toDouble();
       if (watchId != null && amount != null) {
@@ -59,6 +61,7 @@ class WatchRepository {
       final item = itemsByWatch[watch.id];
       final acquisitionId = (item?['acquisition_id'] as num?)?.toInt();
       final sourceRows = sourcesByWatch[watch.id] ?? const [];
+      final claimRows = claimsByWatch[watch.id] ?? const [];
       final structuredTotal = totals[watch.id];
       return watch.withRelated(
         maintenanceCount: maintenanceCounts[watch.id] ?? 0,
@@ -78,6 +81,7 @@ class WatchRepository {
             ? null
             : Acquisition.fromJson(acquisitions[acquisitionId]!, item),
         sources: sourceRows.map(WatchSource.fromJson).toList(),
+        claims: claimRows.map(WatchClaim.fromJson).toList(),
       );
     }).toList();
   }

@@ -420,6 +420,7 @@ class WatchDetailScreen extends StatelessWidget {
                       ('Data do pagamento', _date(watch.acquisition?.purchasePaymentDate)),
                       ('Pagamento dos impostos', _date(watch.acquisition?.taxesPaymentDate)),
                       ('Data de envio', _date(watch.acquisition?.shippedDate)),
+                      ('Entrega prevista', _date(watch.acquisition?.estimatedDeliveryDate)),
                       ('Data de recebimento', _date(watch.acquisition?.receivedDate)),
                       ('Transportadora', _or(watch.acquisition?.carrier)),
                       ('Rastreamento', _or(watch.acquisition?.trackingNumber)),
@@ -427,6 +428,16 @@ class WatchDetailScreen extends StatelessWidget {
                       ('Valor original da peça', _originalMoney(watch)),
                       ('Custo total atribuído', _money(watch.totalInvested)),
                       ('Valor estimado', _optionalMoney(watch.estimatedValue)),
+                      ('Título do anúncio', _or(watch.acquisition?.listingTitle)),
+                      ('Categoria do anúncio', _or(watch.acquisition?.listingCategory)),
+                      ('Condição declarada', _list([
+                        watch.acquisition?.sellerConditionLabel,
+                        watch.acquisition?.sellerConditionDescription,
+                      ])),
+                      ('Quantidade anunciada', _orNumber(watch.acquisition?.listingQuantity)),
+                      ('Idioma do anúncio', _or(watch.acquisition?.listingLanguage)),
+                      ('Dados específicos do anúncio', _specifics(watch.acquisition?.listingSpecifics)),
+                      ('Documento de origem', _or(watch.acquisition?.sourceDocumentName)),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -456,6 +467,16 @@ class WatchDetailScreen extends StatelessWidget {
                       ('Descrição do movimento', _or(watch.movementDescription ?? watch.caliberProfile?.technicalDescription)),
                       ('Rubis', _orNumber(watch.jewels ?? watch.caliberProfile?.jewels)),
                       ('Complicações', _list(watch.complications.isNotEmpty ? watch.complications : watch.caliberProfile?.complications)),
+                      ('Frequência', _frequency(watch.caliberProfile?.frequencyVph)),
+                      ('Reserva de marcha', _hours(watch.caliberProfile?.powerReserveHours)),
+                      ('Diâmetro do movimento', _mm(watch.caliberProfile?.movementDiameterMm)),
+                      ('Espessura do movimento', _mm(watch.caliberProfile?.movementThicknessMm)),
+                      ('Corda manual', _yesNoUnknown(watch.caliberProfile?.hasManualWinding)),
+                      ('Parada de segundos', _yesNoUnknown(watch.caliberProfile?.hasHackingSeconds)),
+                      ('Correções rápidas', _list(watch.caliberProfile?.quicksetFeatures)),
+                      ('Proteção contra choques', _or(watch.caliberProfile?.shockProtection)),
+                      ('Escape', _or(watch.caliberProfile?.escapementType)),
+                      ('Sistema de corda', _or(watch.caliberProfile?.windingDescription)),
                       ('Precisão', _accuracy(watch)),
                       ('Resistência à água', _or(watch.waterResistance)),
                       ('Defeitos conhecidos', _or(watch.knownDefects)),
@@ -471,7 +492,11 @@ class WatchDetailScreen extends StatelessWidget {
                       ('Lug-to-lug', _mm(watch.lugToLugMm)),
                       ('Entre-alças', _mm(watch.lugWidthMm)),
                       ('Material da caixa', _or(watch.caseMaterial)),
+                      ('Tipo de relógio', _or(watch.watchType)),
+                      ('Exibição', _or(watch.displayType)),
+                      ('Público / departamento', _or(watch.intendedAudience)),
                       ('Acabamento / cor / formato', _list([watch.caseFinish, watch.caseColor, watch.caseShape])),
+                      ('Luneta', _list([watch.bezelType, watch.bezelMaterial, watch.bezelColor])),
                       ('Mostrador', _or(watch.dialDescription ?? watch.dialColor)),
                       ('Inscrições do mostrador', _or(watch.dialInscriptions)),
                       ('Índices', _or(watch.indicesDescription)),
@@ -481,10 +506,17 @@ class WatchDetailScreen extends StatelessWidget {
                       ('Fundo da caixa', _or(watch.casebackDescription)),
                       ('Inscrições do fundo', _or(watch.casebackInscriptions)),
                       ('Pulseira', _or(watch.strapDescription ?? watch.strapMaterial)),
+                      ('Cor da pulseira', _or(watch.strapColor)),
                       ('Fecho', _or(watch.claspType)),
                       ('Originalidade da pulseira', _or(watch.strapOriginality)),
                       ('Originalidade do mostrador', _or(watch.dialOriginality)),
                       ('Originalidade geral', _or(watch.componentOriginality)),
+                      ('Caixa original incluída', _yesNoUnknown(watch.hasOriginalBox)),
+                      ('Documentos originais incluídos', _yesNoUnknown(watch.hasOriginalPapers)),
+                      ('Acessórios incluídos', _list(watch.includedAccessories)),
+                      ('Personalizado', _yesNoUnknown(watch.isCustomized)),
+                      ('Descrição da personalização', _or(watch.customizationDescription)),
+                      ('Outras características', _list(watch.features)),
                     ],
                   ),
                   if (watch.modelProfile != null) ...[
@@ -529,6 +561,17 @@ class WatchDetailScreen extends StatelessWidget {
                         : watch.sources.map((source) => (
                             source.name?.isNotEmpty == true ? source.name! : _sourceType(source.type),
                             '${_evidence(source.classification)}${source.confidencePercent == null ? '' : ' • ${source.confidencePercent}%'}${source.excerpt?.isNotEmpty == true ? '\n${source.excerpt}' : ''}',
+                          )).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  _DetailCard(
+                    icon: Icons.rule_outlined,
+                    title: 'Alegações & Pendências de Verificação',
+                    rows: watch.claims.isEmpty
+                        ? const [('Alegações', 'Nenhuma alegação pendente registrada')]
+                        : watch.claims.map((claim) => (
+                            claim.fieldName,
+                            '${claim.assertedValue}${claim.normalizedValue?.isNotEmpty == true ? '\nNormalizado: ${claim.normalizedValue}' : ''}\n${_evidence(claim.classification)} • ${_claimStatus(claim.status)}${claim.confidencePercent == null ? '' : ' • ${claim.confidencePercent}%'}',
                           )).toList(),
                   ),
                   if (watch.notes?.isNotEmpty == true) ...[
@@ -795,6 +838,25 @@ String _accuracy(Watch watch) {
   return _list(parts);
 }
 
+String _yesNoUnknown(bool? value) => value == null
+    ? 'Não informado'
+    : value
+        ? 'Sim'
+        : 'Não';
+
+String _frequency(int? value) => value == null ? 'Não informado' : '$value alternâncias/hora';
+
+String _hours(double? value) => value == null
+    ? 'Não informado'
+    : '${value.toStringAsFixed(value == value.roundToDouble() ? 0 : 2).replaceAll('.', ',')} horas';
+
+String _specifics(Map<String, dynamic>? values) {
+  if (values == null || values.isEmpty) return 'Não informado';
+  final entries = values.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+  return entries.map((entry) => '${entry.key}: ${entry.value}').join('\n');
+}
+
 String _itemNumber(Watch watch) {
   final value = watch.acquisition?.itemSequence ?? watch.orderItemNumber;
   return value?.toString().padLeft(2, '0') ?? 'Não informado';
@@ -827,4 +889,11 @@ String _evidence(String value) => const {
       'estimated': 'Estimado',
       'missing': 'Ausente',
       'inconsistent': 'Inconsistente',
+    }[value] ?? value;
+
+String _claimStatus(String value) => const {
+      'pending': 'Pendente',
+      'accepted': 'Aceita',
+      'rejected': 'Rejeitada',
+      'superseded': 'Substituída',
     }[value] ?? value;

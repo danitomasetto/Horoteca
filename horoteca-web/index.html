@@ -442,6 +442,7 @@
         allocations: [],
         acquisitions: [],
         acquisitionItems: [],
+        claims: [],
         sources: [],
         sort: "code",
       };
@@ -508,7 +509,7 @@
 
       async function loadData() {
         status(els.appStatus, "Carregando colecao...");
-        const [watches, events, legacyHistory, photos, expenses, allocations, acquisitions, acquisitionItems, sources] = await Promise.all([
+        const [watches, events, legacyHistory, photos, expenses, allocations, acquisitions, acquisitionItems, sources, claims] = await Promise.all([
           request("/rest/v1/watches?select=*&order=horoteca_code.asc"),
           request("/rest/v1/watch_events?select=*&order=event_date.desc"),
           request("/rest/v1/maintenance_logs?select=*&order=event_date.desc"),
@@ -520,12 +521,14 @@
           request("/rest/v1/acquisitions?select=*"),
           request("/rest/v1/acquisition_items?select=*"),
           request("/rest/v1/watch_sources?select=*"),
+          request("/rest/v1/watch_claims?select=*"),
         ]);
         state.expenses = expenses;
         state.allocations = allocations;
         state.acquisitions = acquisitions;
         state.acquisitionItems = acquisitionItems;
         state.sources = sources;
+        state.claims = claims;
         const watchesWithEvents = new Set(events.map((event) => event.watch_id));
         state.histories = [
           ...events,
@@ -554,6 +557,7 @@
           acquisition,
           acquisitionItem: item,
           sources: state.sources.filter((source) => source.watch_id === row.id),
+          claims: state.claims.filter((claim) => claim.watch_id === row.id),
           expenses: directExpenses(),
           allocations: allocatedExpenses(),
           totalInvested() {
@@ -614,6 +618,7 @@
             watch.order_number,
             watch.marketplace_item_id,
             watch.seller_name,
+            watch.acquisitionItem?.listing_title,
           ]
             .filter(Boolean)
             .join(" ")
@@ -676,7 +681,11 @@
             ${row("Vendedor", watch.acquisition?.seller_name || watch.seller_name || "Não informado")}
             ${row("Data da compra", parseDate(watch.acquisition?.purchase_date || watch.purchase_date) || "Não informada")}
             ${row("Pagamento dos impostos", parseDate(watch.acquisition?.taxes_payment_date) || "Não informado")}
+            ${row("Entrega prevista", parseDate(watch.acquisition?.estimated_delivery_date) || "Não informada")}
             ${row("Recebimento", parseDate(watch.acquisition?.received_date) || "Não informado")}
+            ${row("Título do anúncio", watch.acquisitionItem?.listing_title || "Não informado")}
+            ${row("Categoria do anúncio", watch.acquisitionItem?.listing_category || "Não informada")}
+            ${row("Condição declarada", [watch.acquisitionItem?.seller_condition_label, watch.acquisitionItem?.seller_condition_description].filter(Boolean).join(" • ") || "Não informada")}
             ${row("Compra", originalMoney(watch))}
             ${row("Custo real", money.format(total))}
             ${row("Valor estimado", estimated ? money.format(estimated) : "Não informado")}
@@ -684,9 +693,14 @@
             ${row("Estado", watch.condition || "Não informado")}
             ${row("Funcionamento", watch.function_status || "Não informado")}
             ${row("Movimento", [watch.movement_type, watch.movement_caliber].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Tipo / exibição / público", [watch.watch_type, watch.display_type, watch.intended_audience].filter(Boolean).join(" • ") || "Não informado")}
             ${row("Caixa", [watch.case_material, watch.case_finish, watch.case_shape].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Luneta", [watch.bezel_type, watch.bezel_material, watch.bezel_color].filter(Boolean).join(" • ") || "Não informada")}
             ${row("Mostrador", watch.dial_description || watch.dial_color || "Não informado")}
-            ${row("Pulseira", watch.strap_description || watch.strap_material || "Não informada")}
+            ${row("Pulseira", [watch.strap_description || watch.strap_material, watch.strap_color].filter(Boolean).join(" • ") || "Não informada")}
+            ${row("Caixa original", yesNoUnknown(watch.has_original_box))}
+            ${row("Documentos originais", yesNoUnknown(watch.has_original_papers))}
+            ${row("Personalizado", yesNoUnknown(watch.is_customized))}
           </div>
           <details>
             <summary>Custos estruturados (${watch.expenses.length + watch.allocations.length})</summary>
@@ -704,6 +718,12 @@
             <summary>Fontes e evidências (${watch.sources.length})</summary>
             <div class="history">
               ${watch.sources.length ? watch.sources.map(renderSource).join("") : '<div class="history-item"><p>Nenhuma fonte estruturada.</p></div>'}
+            </div>
+          </details>
+          <details>
+            <summary>Alegações e pendências (${watch.claims.length})</summary>
+            <div class="history">
+              ${watch.claims.length ? watch.claims.map(renderClaim).join("") : '<div class="history-item"><p>Nenhuma alegação pendente.</p></div>'}
             </div>
           </details>
         `;
@@ -745,6 +765,15 @@
 
       function renderSource(source) {
         return `<div class="history-item"><strong>${escapeHtml(source.source_name || source.source_type || "Fonte")}</strong><p>${escapeHtml(evidenceLabel(source.evidence_classification))}${source.confidence_percent == null ? "" : ` • ${source.confidence_percent}%`}</p></div>`;
+      }
+
+      function renderClaim(claim) {
+        const status = ({ pending: "Pendente", accepted: "Aceita", rejected: "Rejeitada", superseded: "Substituída" })[claim.verification_status] || claim.verification_status;
+        return `<div class="history-item"><strong>${escapeHtml(claim.field_name)}</strong><p>${escapeHtml(claim.asserted_value)} • ${escapeHtml(evidenceLabel(claim.evidence_classification))} • ${escapeHtml(status)}</p></div>`;
+      }
+
+      function yesNoUnknown(value) {
+        return value == null ? "Não informado" : value ? "Sim" : "Não";
       }
 
       function evidenceLabel(value) {
@@ -814,6 +843,7 @@
         state.session = null;
         state.watches = [];
         state.histories = [];
+        state.claims = [];
         show("login");
       });
       els.search.addEventListener("input", render);
