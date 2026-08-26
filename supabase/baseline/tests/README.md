@@ -7,6 +7,14 @@ constraints, índices, função, triggers, RLS, políticas, grants ou configura�
 do Storage. Ele também confirma que as tabelas públicas e `storage.objects` não
 contêm dados operacionais.
 
+O projeto remoto verificado registra `storage.buckets.versioning_status` como
+`disabled`, mas essa coluna ainda não existe na stack local estável usada pela
+CI. A baseline detecta a coluna pelo catálogo: quando disponível, grava e exige
+o valor desativado; quando ausente, cria o mesmo bucket sem referenciar a coluna
+e o teste emite um `NOTICE` sobre essa limitação local. Esse caminho compatível
+mantém o versionamento desativado e não cria colunas nem modifica o schema
+`storage`, que é gerenciado pelo Supabase.
+
 A rotina oficial está em
 `.github/workflows/validate-supabase-baseline.yml`. Ela cria uma configuração
 Supabase nova dentro de `$RUNNER_TEMP`, inicia apenas os serviços locais, aplica

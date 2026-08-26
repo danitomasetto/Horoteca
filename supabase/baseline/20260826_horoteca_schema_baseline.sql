@@ -866,5 +866,22 @@ grant usage on sequence
 to service_role;
 
 -- Private Storage bucket metadata. No storage objects are included.
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, versioning_status, avif_autodetection)
-values ('watch-photos', 'watch-photos', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']::text[], 'STANDARD', 'DISABLED', false);
+do $$
+begin
+  if exists (
+    select 1
+    from pg_catalog.pg_attribute attribute
+    where attribute.attrelid = 'storage.buckets'::regclass
+      and attribute.attname = 'versioning_status'
+      and not attribute.attisdropped
+  ) then
+    execute $bucket$
+      insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, versioning_status, avif_autodetection)
+      values ('watch-photos', 'watch-photos', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']::text[], 'STANDARD', 'DISABLED', false)
+    $bucket$;
+  else
+    insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, avif_autodetection)
+    values ('watch-photos', 'watch-photos', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']::text[], 'STANDARD', false);
+  end if;
+end;
+$$;

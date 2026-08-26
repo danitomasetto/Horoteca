@@ -41,7 +41,30 @@ select pg_temp.assert_catalog('EXECUTE somente para service_role além do owner'
 
 select pg_temp.assert_catalog('nenhuma view pública', (select to_jsonb(count(*)) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('v','m')), $expected$0$expected$::jsonb);
 
-select pg_temp.assert_catalog('bucket watch-photos', (select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'public',public,'file_size_limit',file_size_limit,'allowed_mime_types',allowed_mime_types,'type',type,'versioning_status',versioning_status,'avif_autodetection',avif_autodetection) order by id),'[]'::jsonb) from storage.buckets where id='watch-photos'), $expected$[{"id":"watch-photos","name":"watch-photos","public":false,"file_size_limit":15728640,"allowed_mime_types":["image/jpeg","image/png","image/webp","image/heic","image/heif"],"type":"STANDARD","versioning_status":"DISABLED","avif_autodetection":false}]$expected$::jsonb);
+select pg_temp.assert_catalog('bucket watch-photos', (select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'public',public,'file_size_limit',file_size_limit,'allowed_mime_types',allowed_mime_types,'type',type,'avif_autodetection',avif_autodetection) order by id),'[]'::jsonb) from storage.buckets where id='watch-photos'), $expected$[{"id":"watch-photos","name":"watch-photos","public":false,"file_size_limit":15728640,"allowed_mime_types":["image/jpeg","image/png","image/webp","image/heic","image/heif"],"type":"STANDARD","avif_autodetection":false}]$expected$::jsonb);
+
+do $$
+declare versioning_value text;
+begin
+  if exists (
+    select 1
+    from pg_catalog.pg_attribute attribute
+    where attribute.attrelid = 'storage.buckets'::regclass
+      and attribute.attname = 'versioning_status'
+      and not attribute.attisdropped
+  ) then
+    execute 'select lower(versioning_status::text) from storage.buckets where id = $1'
+      into versioning_value
+      using 'watch-photos';
+    if versioning_value is distinct from 'disabled' then
+      raise exception 'versioning_status do bucket watch-photos divergiu: esperado disabled, obtido %', versioning_value;
+    end if;
+    raise notice 'OK: versioning_status do bucket watch-photos está disabled';
+  else
+    raise notice 'LIMITAÇÃO LOCAL: storage.buckets.versioning_status não existe nesta stack; validação ignorada somente para essa coluna gerenciada';
+  end if;
+end;
+$$;
 
 do $$
 declare r record; n bigint;
