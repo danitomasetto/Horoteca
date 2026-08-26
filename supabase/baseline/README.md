@@ -10,9 +10,14 @@ não deve ser aplicado ao projeto oficial `nlkhbhgzscpdistzuyod`.
 
 A baseline reconstrói as 14 tabelas de `public`, suas identities e sequences,
 constraints, índices, a função `set_updated_at()`, nove triggers, RLS, quatro
-políticas por tabela, grants mínimos para `authenticated` e o bucket privado
-`watch-photos` com suas quatro políticas. Não contém usuários, UUIDs, relógios,
-dados operacionais, segredos nem valores correntes das sequences.
+políticas por tabela, grants catalogais explícitos e o bucket privado
+`watch-photos` com suas quatro políticas. `authenticated` recebe CRUD nas 14
+tabelas e somente `USAGE` nas 14 sequences; `service_role` recebe todos os
+privilégios de tabela, somente `USAGE` nas sequences e `EXECUTE` em
+`set_updated_at()`. `anon` não recebe privilégios nesses objetos. Os grants não
+dependem dos default privileges do projeto de destino. A baseline não contém
+usuários, UUIDs, relógios, dados operacionais, segredos nem valores correntes
+das sequences.
 
 As definições vêm prioritariamente do catálogo sanitizado em
 `docs/SUPABASE_CATALOGO_VERIFICADO_2026-08-26.md`. As precisões de `numeric`

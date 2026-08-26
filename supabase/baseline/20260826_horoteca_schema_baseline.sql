@@ -472,7 +472,8 @@ begin
   return new;
 end;
 $function$;
-revoke all on function public.set_updated_at() from public, anon, authenticated;
+revoke execute on function public.set_updated_at() from public, anon, authenticated, service_role;
+grant execute on function public.set_updated_at() to service_role;
 CREATE TRIGGER acquisition_items_set_updated_at BEFORE UPDATE ON public.acquisition_items FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER acquisitions_set_updated_at BEFORE UPDATE ON public.acquisitions FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER expenses_set_updated_at BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -766,7 +767,7 @@ create policy "owner_update_watch_photo_objects" on storage.objects as permissiv
   with check (((bucket_id = 'watch-photos'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)))
 ;
 
--- Minimal Data API privileges: authenticated only; anon receives no equivalent grants.
+-- Explicit catalog privileges; independent of the target project's default privileges.
 revoke all privileges on
   public.watches,
   public.maintenance_logs,
@@ -782,7 +783,7 @@ revoke all privileges on
   public.watch_sources,
   public.watch_photo_links,
   public.watch_claims
-from anon, authenticated;
+from anon, authenticated, service_role;
 grant select, insert, update, delete on
   public.watches,
   public.maintenance_logs,
@@ -799,6 +800,22 @@ grant select, insert, update, delete on
   public.watch_photo_links,
   public.watch_claims
 to authenticated;
+grant all privileges on
+  public.watches,
+  public.maintenance_logs,
+  public.brands,
+  public.watch_photos,
+  public.watch_models,
+  public.movement_calibers,
+  public.acquisitions,
+  public.acquisition_items,
+  public.expenses,
+  public.expense_allocations,
+  public.watch_events,
+  public.watch_sources,
+  public.watch_photo_links,
+  public.watch_claims
+to service_role;
 revoke all privileges on sequence
   public.acquisition_items_id_seq,
   public.acquisitions_id_seq,
@@ -814,8 +831,8 @@ revoke all privileges on sequence
   public.watch_photos_id_seq,
   public.watch_sources_id_seq,
   public.watches_id_seq
-from anon;
-grant usage, select on sequence
+from anon, authenticated, service_role;
+grant usage on sequence
   public.acquisition_items_id_seq,
   public.acquisitions_id_seq,
   public.brands_id_seq,
@@ -831,6 +848,22 @@ grant usage, select on sequence
   public.watch_sources_id_seq,
   public.watches_id_seq
 to authenticated;
+grant usage on sequence
+  public.acquisition_items_id_seq,
+  public.acquisitions_id_seq,
+  public.brands_id_seq,
+  public.expense_allocations_id_seq,
+  public.expenses_id_seq,
+  public.maintenance_logs_id_seq,
+  public.movement_calibers_id_seq,
+  public.watch_claims_id_seq,
+  public.watch_events_id_seq,
+  public.watch_models_id_seq,
+  public.watch_photo_links_id_seq,
+  public.watch_photos_id_seq,
+  public.watch_sources_id_seq,
+  public.watches_id_seq
+to service_role;
 
 -- Private Storage bucket metadata. No storage objects are included.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, versioning_status, avif_autodetection)
