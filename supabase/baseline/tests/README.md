@@ -7,6 +7,14 @@ constraints, índices, função, triggers, RLS, políticas, grants ou configura�
 do Storage. Ele também confirma que as tabelas públicas e `storage.objects` não
 contêm dados operacionais.
 
+As definições de primary keys, foreign keys e constraints `UNIQUE` são
+comparadas textualmente. Para constraints `CHECK`, o teste cria somente tabelas
+temporárias em `pg_temp` com `LIKE` da tabela pública correspondente, reaplica a
+expressão esperada e lê novamente `pg_get_constraintdef`. Assim, a definição
+esperada e a reconstruída são renderizadas pelo mesmo parser PostgreSQL local,
+eliminando diferenças cosméticas de parênteses entre versões sem ignorar ou
+reescrever a semântica do `CHECK`.
+
 O projeto remoto verificado registra `storage.buckets.versioning_status` como
 `disabled`, mas essa coluna ainda não existe na stack local estável usada pela
 CI. A baseline detecta a coluna pelo catálogo: quando disponível, grava e exige
