@@ -353,10 +353,16 @@ alter table public.watch_sources add constraint "watch_sources_pkey" PRIMARY KEY
 alter table public.watches add constraint "watches_pkey" PRIMARY KEY (id);
 alter table public.acquisition_items add constraint "acquisition_items_listing_quantity_check" CHECK (listing_quantity IS NULL OR listing_quantity > 0);
 alter table public.acquisition_items add constraint "acquisition_items_sequence_check" CHECK (item_sequence > 0);
-alter table public.acquisition_items add constraint "acquisition_items_acquisition_id_fkey" FOREIGN KEY (acquisition_id) REFERENCES public.acquisitions(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.acquisition_items
+  ADD CONSTRAINT acquisition_items_acquisition_id_fkey
+  FOREIGN KEY (acquisition_id)
+  REFERENCES public.acquisitions(id)
+  ON DELETE CASCADE;
 alter table public.acquisition_items add constraint "acquisition_items_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.acquisition_items add constraint "acquisition_items_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.acquisition_items add constraint "acquisition_items_acquisition_sequence_key" UNIQUE (acquisition_id, item_sequence);
+ALTER TABLE ONLY public.acquisition_items
+  ADD CONSTRAINT acquisition_items_acquisition_sequence_key
+  UNIQUE (acquisition_id, item_sequence);
 alter table public.acquisition_items add constraint "acquisition_items_watch_key" UNIQUE (watch_id);
 alter table public.acquisitions add constraint "acquisitions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.brands add constraint "brands_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id);
