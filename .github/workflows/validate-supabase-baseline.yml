@@ -1,0 +1,101 @@
+name: Validate Supabase baseline
+
+on:
+  pull_request:
+    paths:
+      - "supabase/baseline/**"
+      - "docs/SUPABASE_CATALOGO_VERIFICADO_2026-08-26.md"
+      - ".github/workflows/validate-supabase-baseline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # This job is deliberately offline with respect to hosted Supabase projects.
+  # These empty values document that no token, project ID, or remote ref is used.
+  SUPABASE_ACCESS_TOKEN: ""
+  PROJECT_ID: ""
+  SUPABASE_PROJECT_REF: ""
+  SUPABASE_CLI_VERSION: "2.115.0"
+  LOCAL_SUPABASE_DIR: ${{ runner.temp }}/horoteca-supabase
+
+jobs:
+  validate:
+    name: Rebuild and inspect disposable local database
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Record tool versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## Supabase baseline validation"
+            echo
+            echo "- Runner: \`$RUNNER_OS\`"
+            echo "- Supabase CLI: \`$(supabase --version)\`"
+            echo "- Docker: \`$(docker --version)\`"
+            echo "- PostgreSQL client: \`$(psql --version)\`"
+            echo "- Remote credentials: **not configured or required**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Initialize and start disposable local Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$LOCAL_SUPABASE_DIR"
+          supabase init --workdir "$LOCAL_SUPABASE_DIR"
+          supabase start --workdir "$LOCAL_SUPABASE_DIR"
+          echo "- Local Supabase: **started without link or remote project ref**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Apply baseline exactly once
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/baseline/20260826_horoteca_schema_baseline.sql
+          echo "- Baseline application: **passed (one execution)**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate catalog snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/baseline/tests/validate_baseline.sql
+          echo "- SQL catalog assertions: **passed**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Lint local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db lint --local --level error --workdir "$LOCAL_SUPABASE_DIR"
+          echo "- \`supabase db lint --local --level error\`: **passed**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record failed result
+        if: ${{ failure() }}
+        run: |
+          echo "- Validation result: **failed; see the failing step above**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop and delete disposable Supabase
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set +e
+          supabase stop --no-backup --workdir "$LOCAL_SUPABASE_DIR"
+          stop_status=$?
+          rm -rf "$LOCAL_SUPABASE_DIR"
+          docker volume prune --force >/dev/null 2>&1
+          echo "- Disposable containers, volumes, and files: **cleanup attempted (always)**" >> "$GITHUB_STEP_SUMMARY"
+          exit "$stop_status"
