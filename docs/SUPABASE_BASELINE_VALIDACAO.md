@@ -22,7 +22,7 @@ A validação estática confronta, por nome, os 14 objetos de cada grupo abaixo:
 | Índices | 40 índices não vinculados a constraints; outros 42 índices são criados pelas constraints |
 | Automação | uma função `public.set_updated_at()` e nove triggers catalogais |
 | Segurança pública | RLS nas 14 tabelas e 56 políticas (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) |
-| Grants públicos | CRUD explícito para `authenticated`; nenhum equivalente para `anon`; `USAGE, SELECT` nas 14 sequences |
+| Grants públicos | `authenticated`: CRUD nas 14 tabelas e somente `USAGE` nas 14 sequences; `service_role`: todos os privilégios nas 14 tabelas, somente `USAGE` nas 14 sequences e `EXECUTE` em `set_updated_at()`; nenhum privilégio desses objetos para `anon` |
 | Storage | bucket privado `watch-photos`, limite de 15 MiB, cinco MIME types, tipo standard, versionamento desativado e quatro políticas por pasta do usuário |
 
 Foram preservados os índices `UNIQUE` parciais
@@ -36,6 +36,8 @@ de índices provêm das definições catalogais, sem simplificação.
 A SQL contém somente DDL, revogações/concessões de privilégios e o `INSERT` da
 configuração do bucket. Não contém registros de negócio, objetos do Storage,
 usuários, UUIDs, relógios, credenciais, chaves ou valores atuais de sequences.
+A baseline revoga previamente os papéis da API e restabelece explicitamente os
+grants catalogais, sem depender dos default privileges do projeto de destino.
 A varredura estática também rejeita comandos `DROP`, `TRUNCATE`, `DELETE` e
 `UPDATE`. O `INSERT` do bucket é metadado estrutural indispensável e não é dado
 operacional.
