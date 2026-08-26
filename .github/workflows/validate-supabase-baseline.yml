@@ -18,7 +18,6 @@ env:
   PROJECT_ID: ""
   SUPABASE_PROJECT_REF: ""
   SUPABASE_CLI_VERSION: "2.115.0"
-  LOCAL_SUPABASE_DIR: ${{ runner.temp }}/horoteca-supabase
 
 jobs:
   validate:
@@ -29,6 +28,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Prepare disposable local directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          local_supabase_dir="$RUNNER_TEMP/horoteca-supabase"
+          mkdir -p "$local_supabase_dir"
+          echo "LOCAL_SUPABASE_DIR=$local_supabase_dir" >> "$GITHUB_ENV"
 
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
@@ -53,7 +60,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$LOCAL_SUPABASE_DIR"
           supabase init --workdir "$LOCAL_SUPABASE_DIR"
           supabase start --workdir "$LOCAL_SUPABASE_DIR"
           echo "- Local Supabase: **started without link or remote project ref**" >> "$GITHUB_STEP_SUMMARY"
@@ -93,9 +99,15 @@ jobs:
         shell: bash
         run: |
           set +e
-          supabase stop --no-backup --workdir "$LOCAL_SUPABASE_DIR"
-          stop_status=$?
-          rm -rf "$LOCAL_SUPABASE_DIR"
-          docker volume prune --force >/dev/null 2>&1
+          local_supabase_dir="${LOCAL_SUPABASE_DIR:-$RUNNER_TEMP/horoteca-supabase}"
+          stop_status=0
+          if command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup --workdir "$local_supabase_dir"
+            stop_status=$?
+          fi
+          rm -rf "$local_supabase_dir"
+          if command -v docker >/dev/null 2>&1; then
+            docker volume prune --force >/dev/null 2>&1
+          fi
           echo "- Disposable containers, volumes, and files: **cleanup attempted (always)**" >> "$GITHUB_STEP_SUMMARY"
           exit "$stop_status"
