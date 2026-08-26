@@ -99,23 +99,56 @@ Existe uma única função pública própria, `set_updated_at()`. Ela é
 `SECURITY INVOKER` e não concede execução a `anon` nem a `authenticated`.
 Triggers de atualização automática estão presentes em nove tabelas.
 
-### 3.3. Constraints e identidade de negócio
+### 3.3. Constraints, índices parciais e identidade de negócio
 
-- A auditoria não identificou uma **constraint `UNIQUE` explícita** para
-  `watches.horoteca_code`. O repositório contém um índice único parcial composto
-  por `(user_id, horoteca_code)`, mas isso não substitui o registro explícito da
-  regra de identidade canônica como constraint validada na baseline remota.
-- Também não foi confirmada uma constraint de unicidade estruturada para a
-  identidade pedido/marketplace em `acquisitions`. Embora uma migration do
-  repositório declare um índice único parcial sobre usuário, marketplace
-  normalizado e pedido não nulo, a regra não está documentada como constraint
-  declarativa de negócio. A futura baseline deve reconciliar o estado remoto,
-  a intenção do índice e o comportamento desejado para valores nulos ou vazios.
+A inspeção catalogal não encontrou **constraints `UNIQUE` formais** para
+`watches.horoteca_code` nem para a identidade pedido/marketplace em
+`acquisitions`. Isso não significa, porém, ausência de proteção contra
+duplicidades: a mesma inspeção confirmou no remoto estes três **índices
+`UNIQUE` parciais**, que não estão vinculados a constraints formais:
+
+```sql
+CREATE UNIQUE INDEX watches_user_horoteca_code_uidx
+ON watches (user_id, horoteca_code)
+WHERE horoteca_code IS NOT NULL;
+
+CREATE UNIQUE INDEX acquisitions_user_order_uidx
+ON acquisitions (
+  user_id,
+  lower(COALESCE(marketplace, '')),
+  order_number
+)
+WHERE order_number IS NOT NULL;
+
+CREATE UNIQUE INDEX watches_user_order_item_uidx
+ON watches (
+  user_id,
+  lower(COALESCE(marketplace, '')),
+  order_number,
+  order_item_number
+)
+WHERE order_number IS NOT NULL
+  AND order_item_number IS NOT NULL;
+```
+
+Na prática, o primeiro índice já impede, para um mesmo `user_id`, dois códigos
+Horoteca iguais e não nulos. O segundo impede, por usuário, a repetição de um
+`order_number` não nulo no mesmo marketplace normalizado; marketplace `NULL` e
+string vazia são tratados igualmente por `COALESCE`, e diferenças apenas de
+caixa também são normalizadas por `lower`. O terceiro impede, por usuário, a
+repetição do par pedido/item quando ambos são não nulos, também com marketplace
+normalizado.
+
+As linhas excluídas pelos predicados continuam fora dessas garantias: código
+Horoteca nulo; pedido nulo em `acquisitions`; e pedido ou item nulo em
+`watches`. A unicidade também é segregada por `user_id`. Portanto, a ausência
+de constraint formal deve ser registrada separadamente da existência e do
+efeito dos índices. Qualquer regra nova de unicidade para a Fila de Cadastro
+deverá primeiro avaliar esses índices, os casos nulos excluídos e a regra
+funcional desejada, evitando proteção redundante ou incompatível.
 
 Esses achados não indicam duplicidade atual: a inspeção dos dados não encontrou
-códigos de relógio duplicados nem relógios sem código. Eles indicam que as regras
-de identidade precisam ser tornadas inequívocas e reproduzíveis antes da
-automação da finalização.
+códigos de relógio duplicados nem relógios sem código.
 
 ## 4. Migrations e reprodutibilidade
 
@@ -179,8 +212,9 @@ O relógio cadastrado apresenta:
 Há vínculo estruturado com marca e modelo, mas não com calibre. O campo
 `source_document_url` está nulo.
 
-Dos 84 campos de `watches`, 32 estão preenchidos e 52 estão nulos. Entre os
-nulos estão referência, número de série, código da caixa, calibre, medidas,
+`watches` possui 84 campos e `maintenance_logs` possui 17 campos. No registro
+canônico analisado, dos 84 campos de `watches`, 32 estão preenchidos e
+52 estão nulos. Entre os nulos estão referência, número de série, código da caixa, calibre, medidas,
 diversos materiais, URL do documento-fonte e dados técnicos. Parte dessas
 informações pode ser legitimamente desconhecida. A ausência deve continuar
 explícita como `NULL`; não há base para preencher qualquer uma delas por
@@ -283,14 +317,14 @@ nesses avisos.
 
 ### 10.2. Avisos
 
-| ID   | Achado                                                                                                                           | Impacto                                                                                                         |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| A-01 | Não foi identificada constraint `UNIQUE` explícita para `watches.horoteca_code`; há índice único parcial local por usuário.      | A regra canônica não está expressa de forma inequívoca e reconciliada na baseline.                              |
-| A-02 | Não foi confirmada constraint declarativa para unicidade de pedido/marketplace em `acquisitions`; há índice único parcial local. | Casos com nulos, vazios e normalização precisam de regra de negócio explícita antes da finalização automática.  |
-| A-03 | 52 dos 84 campos do relógio estão nulos, inclusive identificadores e dados técnicos relevantes.                                  | O cadastro é incompleto, embora alguns valores possam ser genuinamente desconhecidos e devam permanecer `NULL`. |
-| A-04 | Todos os seis claims estão `pending`.                                                                                            | Nenhuma alegação foi aceita ou rejeitada por revisão registrada.                                                |
-| A-05 | Proteção contra senhas vazadas está desativada no Auth.                                                                          | Uma defesa adicional contra credenciais comprometidas não está habilitada.                                      |
-| A-06 | O bucket não tem versionamento.                                                                                                  | Substituições futuras dependeriam de controles de aplicação e histórico externo; atualmente há zero objetos.    |
+| ID   | Achado                                                                                                                                                                                  | Impacto                                                                                                         |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| A-01 | Não existe constraint `UNIQUE` formal para `watches.horoteca_code`; o índice único parcial remoto por usuário já protege códigos não nulos.                                             | Casos nulos ficam fora do índice e qualquer regra futura deve considerar a proteção já existente.               |
+| A-02 | Não existe constraint `UNIQUE` formal para pedido/marketplace em `acquisitions`; dois índices únicos parciais remotos já protegem pedido e pedido/item nos respectivos casos não nulos. | Casos excluídos pelos predicados e a normalização precisam de decisão funcional antes de criar outra regra.     |
+| A-03 | 52 dos 84 campos do relógio estão nulos, inclusive identificadores e dados técnicos relevantes.                                                                                         | O cadastro é incompleto, embora alguns valores possam ser genuinamente desconhecidos e devam permanecer `NULL`. |
+| A-04 | Todos os seis claims estão `pending`.                                                                                                                                                   | Nenhuma alegação foi aceita ou rejeitada por revisão registrada.                                                |
+| A-05 | Proteção contra senhas vazadas está desativada no Auth.                                                                                                                                 | Uma defesa adicional contra credenciais comprometidas não está habilitada.                                      |
+| A-06 | O bucket não tem versionamento.                                                                                                                                                         | Substituições futuras dependeriam de controles de aplicação e histórico externo; atualmente há zero objetos.    |
 
 ### 10.3. Informações
 
@@ -314,12 +348,13 @@ executada nesta tarefa.**
    testar a reconstrução em ambiente descartável e em transação com rollback.
 2. Reconciliar formalmente os nomes/timestamps das migrations locais com o
    histórico remoto, sem editar retroativamente migrations aplicadas.
-3. Definir e versionar, após aprovação funcional, a regra inequívoca de
-   unicidade de `horoteca_code`, considerando o escopo por proprietário e a
-   compatibilidade com os dados existentes.
-4. Definir a identidade estruturada de aquisição por pedido e marketplace,
-   incluindo normalização, valores nulos/vazios e possíveis marketplaces sem
-   número de pedido; só então materializar a constraint apropriada.
+3. Avaliar primeiro `watches_user_horoteca_code_uidx` e, após aprovação
+   funcional, decidir se a proteção já existente para códigos não nulos é
+   suficiente ou se outra regra é necessária para a Fila de Cadastro.
+4. Avaliar primeiro `acquisitions_user_order_uidx` e
+   `watches_user_order_item_uidx`; definir a identidade estruturada de aquisição
+   considerando a normalização já aplicada e os valores nulos excluídos antes
+   de criar qualquer nova constraint ou índice.
 5. Importar ou reservar `H001` como processo histórico antes de criar novos
    intakes; inicializar o próximo processo em `H002`, sem usar `Hxxx` como código
    de relógio.

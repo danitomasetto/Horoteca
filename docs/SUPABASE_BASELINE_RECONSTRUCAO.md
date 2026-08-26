@@ -53,7 +53,7 @@ encontrado no legado foi deliberadamente omitido deste documento.
 | Tabela                | Existência atual | Criação reproduzível | Evidência principal                                     | Pendência decisiva                                                           |
 | --------------------- | ---------------- | -------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `watches`             | R                | **Não**              | R: tabela remota, 84 colunas; M: alterações posteriores | criação original, colunas originárias e todos os metadados catalogais finais |
-| `maintenance_logs`    | R                | **Não**              | R: tabela remota; M: alterações posteriores             | criação original e definições completas dos campos legados                   |
+| `maintenance_logs`    | R                | **Não**              | R: tabela remota, 17 colunas; M: alterações posteriores | criação original e definições completas dos campos legados                   |
 | `brands`              | M + R            | Parcialmente         | M: criação; R: existência/RLS                           | confrontar definição efetiva, índices, políticas e grants finais             |
 | `watch_photos`        | M + R            | Parcialmente         | M: criação e alterações; R: existência/RLS              | confrontar estado final e sequência                                          |
 | `watch_models`        | M + R            | Parcialmente         | M: criação; R: existência/RLS                           | confrontar estado final                                                      |
@@ -107,17 +107,19 @@ DELETE SET NULL`), `serial_number`, `case_code`, `dial_code`;
 now()` quando adicionados.
 - Checks locais: joias entre 0 e 200 (ou nulo), período ordenado (ou limites
   nulos) e dimensões positivas (ou nulas).
-- Índices locais: único parcial `(user_id, horoteca_code)` quando o código não é
-  nulo; único parcial de usuário/marketplace normalizado/pedido/item quando
-  pedido e item não são nulos; índices de `brand_id`, `watch_model_id` e
-  `movement_caliber_id`.
+- Índices locais: únicos parciais de código e de pedido/item; índices de
+  `brand_id`, `watch_model_id` e `movement_caliber_id`.
 - Trigger local `watches_set_updated_at`, `BEFORE UPDATE FOR EACH ROW`, chama
   `public.set_updated_at()`.
 
 **R — confirmado pela auditoria:** existe, possui 84 colunas, RLS ativo,
 políticas separadas por operação/proprietário e CRUD apenas para
-`authenticated`. Não foi identificada constraint `UNIQUE` explícita em
-`horoteca_code`; isso não nega o índice único parcial local.
+`authenticated`. Não existe constraint `UNIQUE` formal em `horoteca_code`, mas
+o índice único parcial remoto `watches_user_horoteca_code_uidx` impede a
+repetição de `(user_id, horoteca_code)` quando o código não é nulo. Também foi
+confirmado `watches_user_order_item_uidx`, que impede por usuário a repetição de
+pedido/item não nulos no marketplace normalizado. Código nulo e linhas com
+pedido ou item nulo, respectivamente, ficam fora desses índices.
 
 **I — apenas inferido pelo código:** Flutter consome `id`, `user_id` (nas
 relações/políticas), `brand`, `model`, `reference_number`, `movement_type`,
@@ -147,8 +149,9 @@ owner; e confronto dos índices/triggers locais com o remoto.
 removido e foi convertido para `date`. Há índice local em `user_id` e trigger
 `maintenance_logs_set_updated_at`.
 
-**R — confirmado pela auditoria:** existe, tem RLS ativo, quatro políticas por
-operação/proprietário e CRUD somente para `authenticated`.
+**R — confirmado pela auditoria:** existe, possui 17 colunas, tem RLS ativo,
+quatro políticas separadas por operação/proprietário e CRUD somente para
+`authenticated`.
 
 **I — apenas inferido pelo código:** o fallback Flutter lê `watch_id`,
 `event_date`/`service_date`, `description`, `service_provider`, `cost`,
@@ -174,7 +177,7 @@ DEFAULT AS IDENTITY PRIMARY KEY` na migration.
 | `watch_photos`        | identity PK; `watch_id bigint` passou a nulo; `acquisition_id bigint`; `user_id uuid NOT NULL DEFAULT auth.uid()`; `storage_path text NOT NULL`; caption/tipos/fontes/evidência/notas; `is_cover boolean NOT NULL DEFAULT false`; `sort_order integer NOT NULL DEFAULT 0`; timestamps | FKs watches/acquisitions cascade; unique usuário/caminho; check ao menos um dono; check de classificação; índices watch/acquisition; trigger de updated_at |
 | `watch_models`        | identity PK; user/brand; `model_name text NOT NULL`; identidade e história do modelo; anos `smallint`; fontes `jsonb`; revisão `date`; timestamps                                                                                                                                     | FK auth cascade, brand set null; check de anos; índice único por identidade normalizada; índices user/brand; trigger                                       |
 | `movement_calibers`   | identity PK; user; `caliber_code text NOT NULL`; técnica/história; extensões de frequência `integer`, medidas/reserva `numeric(6,2)`, booleanos e arrays; timestamps                                                                                                                  | FK auth cascade; checks de joias, anos e medidas positivas; identidade única normalizada; índice user; trigger                                             |
-| `acquisitions`        | identity PK; user; marketplace/vendedor/pedido; datas; pagamento/transporte; origem/notas; entrega estimada e nome do documento; timestamps                                                                                                                                           | FK auth cascade; índice único parcial local de usuário/marketplace normalizado/pedido; índice user; trigger                                                |
+| `acquisitions`        | identity PK; user; marketplace/vendedor/pedido; datas; pagamento/transporte; origem/notas; entrega estimada e nome do documento; timestamps                                                                                                                                           | FK auth cascade; índice único parcial de usuário/marketplace normalizado/pedido; índice user; trigger                                                      |
 | `acquisition_items`   | identity PK; user, aquisição e relógio não nulos; sequência `integer NOT NULL`; preços `numeric(14,2)`; metadados de listagem; `listing_specifics jsonb NOT NULL DEFAULT '{}'`; timestamps                                                                                            | FKs auth/aquisição/relógio cascade; sequência positiva e quantidade positiva/nula; uniques aquisição+sequência e relógio; índices user/FK e GIN; trigger   |
 | `expenses`            | identity PK; user; aquisição/relógio opcionais; categoria/moeda/valor original obrigatórios; valores `numeric`; compartilhada `boolean NOT NULL DEFAULT false`; timestamps                                                                                                            | FKs cascade; exige aquisição ou relógio; enumeração de categoria; valores não negativos/câmbio positivo; índices user/FKs; trigger                         |
 | `expense_allocations` | identity PK; user/despesa/relógio não nulos; parcelas `numeric(14,2)`; BRL obrigatório; ajuste `NOT NULL DEFAULT 0`; `created_at`                                                                                                                                                     | FKs cascade; checks não negativos; unique despesa+relógio; índices user/FKs; nenhuma trigger local                                                         |
@@ -187,6 +190,13 @@ Para essas 12 tabelas, **R** confirma apenas existência, RLS e políticas por
 operação/proprietário no recorte auditado. **P** permanece para definição
 catalogal final de cada coluna, identity/sequences e parâmetros, nomes/estado de
 constraints, índices (incluindo validade), triggers, políticas, owners e ACLs.
+
+Há uma exceção catalogal já resolvida nesse resumo: a auditoria confirmou
+`acquisitions_user_order_uidx` como índice `UNIQUE` parcial remoto, sem
+constraint `UNIQUE` formal correspondente. Ele impede, por usuário, pedido não
+nulo duplicado no mesmo marketplace normalizado por
+`lower(COALESCE(marketplace, ''))`; marketplace nulo e vazio são equivalentes,
+mas linhas com pedido nulo ficam fora do índice.
 
 ## 4. Definições confirmadas fora das tabelas
 
@@ -275,8 +285,10 @@ baseline sem confirmação:
    estão, inclusive validação.
 4. Todas as sequences/identity: vínculo à coluna, owner, tipo, início,
    incremento, mínimo, máximo, cache, ciclo e ACL.
-5. Índices remotos exatos: definição, predicado, método, collation/opclass,
-   inclusão, unicidade, validade e vínculo a constraint.
+5. Demais índices remotos e metadados ainda não capturados: definição,
+   predicado, método, collation/opclass, inclusão, validade e vínculo a
+   constraint. As definições dos três índices únicos parciais de identidade já
+   estão confirmadas.
 6. Políticas/RLS e grants exatos, não apenas o resumo agregado.
 7. Função e triggers extraídos do remoto.
 8. Extensões e dependências de schemas.
@@ -285,8 +297,9 @@ baseline sem confirmação:
 ### 6.2. Não autorizadas a virar “solução” nesta fase
 
 - escolher tipos ou defaults para campos originais a partir do Flutter/legado;
-- converter os índices parciais de identidade em constraints sem decisão de
-  produto e reconciliação remota;
+- converter ou duplicar os índices parciais de identidade com novas constraints
+  ou índices sem antes avaliar sua cobertura, os casos nulos e a decisão de
+  produto para a Fila de Cadastro;
 - presumir que a ordem dos arquivos locais equivale integralmente ao histórico
   remoto, cujos nomes/timestamps divergem;
 - acrescentar tabelas da Fila, `H001`, sequences ou RPCs futuras à baseline do
@@ -628,7 +641,7 @@ A baseline só poderá ser considerada pronta quando:
    revisados e sanitizados;
 2. cada célula **P** bloqueadora tiver sido resolvida por evidência catalogal,
    não por código ou legado;
-3. as 84 colunas de `watches` e todas as de `maintenance_logs` estiverem
+3. as 84 colunas de `watches` e as 17 de `maintenance_logs` estiverem
    enumeradas com definições exatas;
 4. tabelas, sequences, constraints, índices, função, triggers, RLS, políticas,
    grants, views, extensões e Storage tiverem comparação Git × remoto;
@@ -647,8 +660,9 @@ A baseline só poderá ser considerada pronta quando:
    usuário ou outros valores privados.
 3. Produzir o confronto catalogal campo a campo e resolver primeiro
    `watches`/`maintenance_logs`.
-4. Submeter as regras ainda ambíguas de identidade a Dani; não convertê-las
-   automaticamente em constraints.
+4. Submeter as regras ainda ambíguas de identidade a Dani; avaliar antes os
+   três índices únicos parciais confirmados, sua normalização e exclusões por
+   valores nulos, sem convertê-los ou duplicá-los automaticamente.
 5. Só depois elaborar, em tarefa separada, uma baseline SQL e validá-la em
    ambiente descartável/transação com rollback.
 6. Manter a Fila de Cadastro, a preservação estruturada de `H001` e a sequence
