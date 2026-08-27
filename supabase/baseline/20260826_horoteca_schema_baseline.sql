@@ -337,24 +337,40 @@ create table public.watch_claims (
 );
 
 -- Primary keys, foreign keys, checks and unique constraints.
+alter table public.acquisition_items add constraint "acquisition_items_pkey" PRIMARY KEY (id);
+alter table public.acquisitions add constraint "acquisitions_pkey" PRIMARY KEY (id);
+alter table public.brands add constraint "brands_pkey" PRIMARY KEY (id);
+alter table public.expense_allocations add constraint "expense_allocations_pkey" PRIMARY KEY (id);
+alter table public.expenses add constraint "expenses_pkey" PRIMARY KEY (id);
+alter table public.maintenance_logs add constraint "maintenance_logs_pkey" PRIMARY KEY (id);
+alter table public.movement_calibers add constraint "movement_calibers_pkey" PRIMARY KEY (id);
+alter table public.watch_claims add constraint "watch_claims_pkey" PRIMARY KEY (id);
+alter table public.watch_events add constraint "watch_events_pkey" PRIMARY KEY (id);
+alter table public.watch_models add constraint "watch_models_pkey" PRIMARY KEY (id);
+alter table public.watch_photo_links add constraint "watch_photo_links_pkey" PRIMARY KEY (id);
+alter table public.watch_photos add constraint "watch_photos_pkey" PRIMARY KEY (id);
+alter table public.watch_sources add constraint "watch_sources_pkey" PRIMARY KEY (id);
+alter table public.watches add constraint "watches_pkey" PRIMARY KEY (id);
 alter table public.acquisition_items add constraint "acquisition_items_listing_quantity_check" CHECK (listing_quantity IS NULL OR listing_quantity > 0);
 alter table public.acquisition_items add constraint "acquisition_items_sequence_check" CHECK (item_sequence > 0);
-alter table public.acquisition_items add constraint "acquisition_items_acquisition_id_fkey" FOREIGN KEY (acquisition_id) REFERENCES public.acquisitions(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.acquisition_items
+  ADD CONSTRAINT acquisition_items_acquisition_id_fkey
+  FOREIGN KEY (acquisition_id)
+  REFERENCES public.acquisitions(id)
+  ON DELETE CASCADE;
 alter table public.acquisition_items add constraint "acquisition_items_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.acquisition_items add constraint "acquisition_items_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.acquisition_items add constraint "acquisition_items_pkey" PRIMARY KEY (id);
-alter table public.acquisition_items add constraint "acquisition_items_acquisition_sequence_key" UNIQUE (acquisition_id, item_sequence);
+ALTER TABLE ONLY public.acquisition_items
+  ADD CONSTRAINT acquisition_items_acquisition_sequence_key
+  UNIQUE (acquisition_id, item_sequence);
 alter table public.acquisition_items add constraint "acquisition_items_watch_key" UNIQUE (watch_id);
 alter table public.acquisitions add constraint "acquisitions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-alter table public.acquisitions add constraint "acquisitions_pkey" PRIMARY KEY (id);
 alter table public.brands add constraint "brands_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id);
-alter table public.brands add constraint "brands_pkey" PRIMARY KEY (id);
 alter table public.brands add constraint "brands_user_id_name_key" UNIQUE (user_id, name);
 alter table public.expense_allocations add constraint "expense_allocations_amounts_check" CHECK ((amount_original_allocated IS NULL OR amount_original_allocated >= 0::numeric) AND amount_brl_allocated >= 0::numeric);
 alter table public.expense_allocations add constraint "expense_allocations_expense_id_fkey" FOREIGN KEY (expense_id) REFERENCES public.expenses(id) ON DELETE CASCADE;
 alter table public.expense_allocations add constraint "expense_allocations_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.expense_allocations add constraint "expense_allocations_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.expense_allocations add constraint "expense_allocations_pkey" PRIMARY KEY (id);
 alter table public.expense_allocations add constraint "expense_allocations_expense_watch_key" UNIQUE (expense_id, watch_id);
 alter table public.expenses add constraint "expenses_amounts_check" CHECK (amount_original >= 0::numeric AND (amount_brl IS NULL OR amount_brl >= 0::numeric) AND (exchange_rate IS NULL OR exchange_rate > 0::numeric));
 alter table public.expenses add constraint "expenses_category_check" CHECK (category = ANY (ARRAY['product'::text, 'freight'::text, 'tax'::text, 'fee'::text, 'carrier'::text, 'maintenance'::text, 'parts'::text, 'strap'::text, 'other'::text]));
@@ -362,15 +378,12 @@ alter table public.expenses add constraint "expenses_owner_check" CHECK (acquisi
 alter table public.expenses add constraint "expenses_acquisition_id_fkey" FOREIGN KEY (acquisition_id) REFERENCES public.acquisitions(id) ON DELETE CASCADE;
 alter table public.expenses add constraint "expenses_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.expenses add constraint "expenses_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.expenses add constraint "expenses_pkey" PRIMARY KEY (id);
 alter table public.maintenance_logs add constraint "maintenance_logs_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id);
 alter table public.maintenance_logs add constraint "maintenance_logs_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.maintenance_logs add constraint "maintenance_logs_pkey" PRIMARY KEY (id);
 alter table public.movement_calibers add constraint "movement_calibers_jewels_check" CHECK (jewels IS NULL OR jewels >= 0 AND jewels <= 200);
 alter table public.movement_calibers add constraint "movement_calibers_specs_check" CHECK ((frequency_vph IS NULL OR frequency_vph > 0) AND (power_reserve_hours IS NULL OR power_reserve_hours > 0::numeric) AND (movement_diameter_mm IS NULL OR movement_diameter_mm > 0::numeric) AND (movement_thickness_mm IS NULL OR movement_thickness_mm > 0::numeric));
 alter table public.movement_calibers add constraint "movement_calibers_years_check" CHECK (production_start_year IS NULL OR production_end_year IS NULL OR production_start_year <= production_end_year);
 alter table public.movement_calibers add constraint "movement_calibers_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-alter table public.movement_calibers add constraint "movement_calibers_pkey" PRIMARY KEY (id);
 alter table public.watch_claims add constraint "watch_claims_asserted_value_check" CHECK (btrim(asserted_value) <> ''::text);
 alter table public.watch_claims add constraint "watch_claims_classification_check" CHECK (evidence_classification = ANY (ARRAY['document_confirmed'::text, 'seller_statement'::text, 'visual_observation'::text, 'researched'::text, 'estimated'::text, 'missing'::text, 'inconsistent'::text]));
 alter table public.watch_claims add constraint "watch_claims_confidence_check" CHECK (confidence_percent IS NULL OR confidence_percent >= 0 AND confidence_percent <= 100);
@@ -379,29 +392,24 @@ alter table public.watch_claims add constraint "watch_claims_status_check" CHECK
 alter table public.watch_claims add constraint "watch_claims_source_id_fkey" FOREIGN KEY (source_id) REFERENCES public.watch_sources(id) ON DELETE SET NULL;
 alter table public.watch_claims add constraint "watch_claims_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.watch_claims add constraint "watch_claims_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.watch_claims add constraint "watch_claims_pkey" PRIMARY KEY (id);
 alter table public.watch_events add constraint "watch_events_owner_check" CHECK (watch_id IS NOT NULL OR acquisition_id IS NOT NULL);
 alter table public.watch_events add constraint "watch_events_type_check" CHECK (event_type = ANY (ARRAY['purchase'::text, 'payment'::text, 'shipment'::text, 'customs'::text, 'receipt'::text, 'inspection'::text, 'maintenance'::text, 'parts_replacement'::text, 'valuation'::text, 'sale'::text, 'retirement'::text, 'other'::text]));
 alter table public.watch_events add constraint "watch_events_acquisition_id_fkey" FOREIGN KEY (acquisition_id) REFERENCES public.acquisitions(id) ON DELETE CASCADE;
 alter table public.watch_events add constraint "watch_events_expense_id_fkey" FOREIGN KEY (expense_id) REFERENCES public.expenses(id) ON DELETE SET NULL;
 alter table public.watch_events add constraint "watch_events_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.watch_events add constraint "watch_events_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.watch_events add constraint "watch_events_pkey" PRIMARY KEY (id);
 alter table public.watch_models add constraint "watch_models_years_check" CHECK (production_start_year IS NULL OR production_end_year IS NULL OR production_start_year <= production_end_year);
 alter table public.watch_models add constraint "watch_models_brand_id_fkey" FOREIGN KEY (brand_id) REFERENCES public.brands(id) ON DELETE SET NULL;
 alter table public.watch_models add constraint "watch_models_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-alter table public.watch_models add constraint "watch_models_pkey" PRIMARY KEY (id);
 alter table public.watch_photo_links add constraint "watch_photo_links_photo_id_fkey" FOREIGN KEY (photo_id) REFERENCES public.watch_photos(id) ON DELETE CASCADE;
 alter table public.watch_photo_links add constraint "watch_photo_links_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.watch_photo_links add constraint "watch_photo_links_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.watch_photo_links add constraint "watch_photo_links_pkey" PRIMARY KEY (id);
 alter table public.watch_photo_links add constraint "watch_photo_links_photo_watch_key" UNIQUE (photo_id, watch_id);
 alter table public.watch_photos add constraint "watch_photos_classification_check" CHECK (evidence_classification IS NULL OR (evidence_classification = ANY (ARRAY['document_confirmed'::text, 'seller_statement'::text, 'visual_observation'::text, 'researched'::text, 'estimated'::text, 'missing'::text, 'inconsistent'::text])));
 alter table public.watch_photos add constraint "watch_photos_owner_check" CHECK (watch_id IS NOT NULL OR acquisition_id IS NOT NULL);
 alter table public.watch_photos add constraint "watch_photos_acquisition_id_fkey" FOREIGN KEY (acquisition_id) REFERENCES public.acquisitions(id) ON DELETE CASCADE;
 alter table public.watch_photos add constraint "watch_photos_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id);
 alter table public.watch_photos add constraint "watch_photos_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.watch_photos add constraint "watch_photos_pkey" PRIMARY KEY (id);
 alter table public.watch_photos add constraint "watch_photos_user_id_storage_path_key" UNIQUE (user_id, storage_path);
 alter table public.watch_sources add constraint "watch_sources_classification_check" CHECK (evidence_classification = ANY (ARRAY['document_confirmed'::text, 'seller_statement'::text, 'visual_observation'::text, 'researched'::text, 'estimated'::text, 'missing'::text, 'inconsistent'::text]));
 alter table public.watch_sources add constraint "watch_sources_confidence_check" CHECK (confidence_percent IS NULL OR confidence_percent >= 0 AND confidence_percent <= 100);
@@ -409,7 +417,6 @@ alter table public.watch_sources add constraint "watch_sources_owner_check" CHEC
 alter table public.watch_sources add constraint "watch_sources_acquisition_id_fkey" FOREIGN KEY (acquisition_id) REFERENCES public.acquisitions(id) ON DELETE CASCADE;
 alter table public.watch_sources add constraint "watch_sources_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.watch_sources add constraint "watch_sources_watch_id_fkey" FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
-alter table public.watch_sources add constraint "watch_sources_pkey" PRIMARY KEY (id);
 alter table public.watches add constraint "watches_dimensions_check" CHECK ((diameter_mm IS NULL OR diameter_mm > 0::numeric) AND (case_thickness_mm IS NULL OR case_thickness_mm > 0::numeric) AND (lug_to_lug_mm IS NULL OR lug_to_lug_mm > 0::numeric) AND (lug_width_mm IS NULL OR lug_width_mm > 0::numeric));
 alter table public.watches add constraint "watches_jewels_check" CHECK (jewels IS NULL OR jewels >= 0 AND jewels <= 200);
 alter table public.watches add constraint "watches_year_period_check" CHECK (production_period_start_year IS NULL OR production_period_end_year IS NULL OR production_period_start_year <= production_period_end_year);
@@ -417,7 +424,6 @@ alter table public.watches add constraint "watches_brand_id_fkey" FOREIGN KEY (b
 alter table public.watches add constraint "watches_movement_caliber_id_fkey" FOREIGN KEY (movement_caliber_id) REFERENCES public.movement_calibers(id) ON DELETE SET NULL;
 alter table public.watches add constraint "watches_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE RESTRICT;
 alter table public.watches add constraint "watches_watch_model_id_fkey" FOREIGN KEY (watch_model_id) REFERENCES public.watch_models(id) ON DELETE SET NULL;
-alter table public.watches add constraint "watches_pkey" PRIMARY KEY (id);
 
 -- Non-constraint indexes (constraint-backed indexes are created by constraints above).
 CREATE INDEX acquisition_items_acquisition_id_idx ON public.acquisition_items USING btree (acquisition_id);
@@ -866,5 +872,22 @@ grant usage on sequence
 to service_role;
 
 -- Private Storage bucket metadata. No storage objects are included.
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, versioning_status, avif_autodetection)
-values ('watch-photos', 'watch-photos', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']::text[], 'STANDARD', 'DISABLED', false);
+do $$
+begin
+  if exists (
+    select 1
+    from pg_catalog.pg_attribute attribute
+    where attribute.attrelid = 'storage.buckets'::regclass
+      and attribute.attname = 'versioning_status'
+      and not attribute.attisdropped
+  ) then
+    execute $bucket$
+      insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, versioning_status, avif_autodetection)
+      values ('watch-photos', 'watch-photos', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']::text[], 'STANDARD', 'DISABLED', false)
+    $bucket$;
+  else
+    insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types, type, avif_autodetection)
+    values ('watch-photos', 'watch-photos', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']::text[], 'STANDARD', false);
+  end if;
+end;
+$$;
