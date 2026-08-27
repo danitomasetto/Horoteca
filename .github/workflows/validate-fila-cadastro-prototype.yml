@@ -1,0 +1,186 @@
+name: Validate Fila de Cadastro migration
+
+on:
+  pull_request:
+    paths:
+      - "supabase/fila_cadastro/**"
+      - "supabase/migrations/20260827101428_fila_cadastro.sql"
+      - "supabase/migrations/20260827101608_harden_fila_cadastro_private_rls.sql"
+      - ".github/workflows/validate-fila-cadastro-prototype.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_ACCESS_TOKEN: ""
+  PROJECT_ID: ""
+  SUPABASE_PROJECT_REF: ""
+  SUPABASE_CLI_VERSION: "2.115.0"
+  TEST_OWNER_USER_ID: "11111111-1111-4111-8111-111111111111"
+  TEST_OTHER_USER_ID: "22222222-2222-4222-8222-222222222222"
+
+jobs:
+  validate:
+    name: Validate disposable intake foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare disposable local directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          local_supabase_dir="$RUNNER_TEMP/horoteca-fila-cadastro"
+          mkdir -p "$local_supabase_dir"
+          echo "LOCAL_SUPABASE_DIR=$local_supabase_dir" >> "$GITHUB_ENV"
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Record tool versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## Fila de Cadastro migration"
+            echo
+            echo "- Supabase CLI: \`$(supabase --version)\`"
+            echo "- Docker: \`$(docker --version)\`"
+            echo "- PostgreSQL client: \`$(psql --version)\`"
+            echo "- Hosted Supabase credentials: **not configured or required**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Initialize and start disposable local Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase init --workdir "$LOCAL_SUPABASE_DIR"
+          supabase start --workdir "$LOCAL_SUPABASE_DIR"
+
+      - name: Apply and validate canonical baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/baseline/20260826_horoteca_schema_baseline.sql
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/baseline/tests/validate_baseline.sql
+          echo "- Canonical baseline: **applied once and validated**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create fictitious local auth users
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --set=owner_user_id="$TEST_OWNER_USER_ID" \
+            --set=other_user_id="$TEST_OTHER_USER_ID" <<'SQL'
+          insert into auth.users (
+            instance_id,
+            id,
+            aud,
+            role,
+            email,
+            encrypted_password,
+            email_confirmed_at,
+            raw_app_meta_data,
+            raw_user_meta_data,
+            created_at,
+            updated_at
+          )
+          values
+            (
+              '00000000-0000-0000-0000-000000000000',
+              :'owner_user_id'::uuid,
+              'authenticated',
+              'authenticated',
+              'owner@example.test',
+              '',
+              now(),
+              '{"provider":"email","providers":["email"]}'::jsonb,
+              '{}'::jsonb,
+              now(),
+              now()
+            ),
+            (
+              '00000000-0000-0000-0000-000000000000',
+              :'other_user_id'::uuid,
+              'authenticated',
+              'authenticated',
+              'other@example.test',
+              '',
+              now(),
+              '{"provider":"email","providers":["email"]}'::jsonb,
+              '{}'::jsonb,
+              now(),
+              now()
+            );
+          SQL
+
+      - name: Apply migration and import H001 idempotently
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/migrations/20260827101428_fila_cadastro.sql
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/migrations/20260827101608_harden_fila_cadastro_private_rls.sql
+          for attempt in 1 2; do
+            psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+              --set=owner_user_id="$TEST_OWNER_USER_ID" \
+              --file=supabase/fila_cadastro/import_h001_prototype.sql
+          done
+          echo "- Migration: **applied once**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- H001 import: **executed twice for idempotency**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate domain and security assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --set=owner_user_id="$TEST_OWNER_USER_ID" \
+            --set=other_user_id="$TEST_OTHER_USER_ID" \
+            --file=supabase/fila_cadastro/tests/validate_foundation.sql
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --set=owner_user_id="$TEST_OWNER_USER_ID" \
+            --set=other_user_id="$TEST_OTHER_USER_ID" \
+            --file=supabase/fila_cadastro/tests/validate_operations.sql
+          echo "- Domain, RLS, transitions, reviews, rollback and idempotency: **passed**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Lint local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db lint --local --level error --workdir "$LOCAL_SUPABASE_DIR"
+          echo "- Database lint: **passed**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record failed result
+        if: ${{ failure() }}
+        run: |
+          echo "- Validation result: **failed; see the failing step**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop and delete disposable Supabase
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set +e
+          local_supabase_dir="${LOCAL_SUPABASE_DIR:-$RUNNER_TEMP/horoteca-fila-cadastro}"
+          stop_status=0
+          if command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup --workdir "$local_supabase_dir"
+            stop_status=$?
+          fi
+          rm -rf "$local_supabase_dir"
+          if command -v docker >/dev/null 2>&1; then
+            docker volume prune --force >/dev/null 2>&1
+          fi
+          exit "$stop_status"

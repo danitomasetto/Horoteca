@@ -12,6 +12,16 @@ class AppUpdateService {
 
   Future<void> check(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    if (!Platform.isAndroid) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No iPhone, as atualizações chegam pelo TestFlight ou pela App Store.',
+          ),
+        ),
+      );
+      return;
+    }
     messenger.showSnackBar(
       const SnackBar(content: Text('Verificando nova versão...')),
     );

@@ -38,3 +38,20 @@ flutter run \
 ```
 
 Nunca use uma chave `service_role` ou `sb_secret_` no aplicativo.
+
+## iOS
+
+O projeto nativo fica em `ios/` e usa o mesmo código Dart da versão Android.
+A CI executa um build release sem assinatura em macOS para detectar problemas
+de Xcode e de plugins antes da distribuição.
+
+Para testar localmente, instale o Xcode e execute em um Mac:
+
+```sh
+flutter pub get
+flutter run
+```
+
+Publicar no TestFlight ou na App Store exige um Bundle ID registrado, conta no
+Apple Developer Program, equipe de assinatura e certificados/perfis válidos.
+Essas credenciais não ficam no repositório.
