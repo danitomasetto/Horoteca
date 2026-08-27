@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - "supabase/fila_cadastro/**"
-      - "supabase/migrations/20260827094104_fila_cadastro.sql"
+      - "supabase/migrations/20260827101428_fila_cadastro.sql"
+      - "supabase/migrations/20260827101608_harden_fila_cadastro_private_rls.sql"
       - ".github/workflows/validate-fila-cadastro-prototype.yml"
   workflow_dispatch:
 
@@ -129,7 +130,9 @@ jobs:
           set -euo pipefail
           database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
-            --file=supabase/migrations/20260827094104_fila_cadastro.sql
+            --file=supabase/migrations/20260827101428_fila_cadastro.sql
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/migrations/20260827101608_harden_fila_cadastro_private_rls.sql
           for attempt in 1 2; do
             psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
               --set=owner_user_id="$TEST_OWNER_USER_ID" \

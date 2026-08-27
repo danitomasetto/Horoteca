@@ -1,16 +1,18 @@
 # Fila de Cadastro — fundação executável
 
 Esta pasta preserva a **especificação executável e os testes locais** que deram
-origem à migration da Fila de Cadastro. A migration ainda não foi aplicada ao
-Supabase oficial.
+origem às migrations da Fila de Cadastro, aplicadas ao Supabase oficial em
+27/08/2026.
 
-O objetivo desta etapa é validar o modelo, a segurança e a importação histórica
-de H001 em uma instância descartável antes de qualquer aplicação remota.
+O objetivo desta etapa é preservar a validação do modelo, da segurança e da
+importação histórica de H001 em uma instância descartável.
 
 ## Arquivos
 
-- `../migrations/20260827094104_fila_cadastro.sql`: migration gerada pela
-  Supabase CLI a partir da fundação e das operações aprovadas.
+- `../migrations/20260827101428_fila_cadastro.sql`: migration principal gerada
+  pela Supabase CLI a partir da fundação e das operações aprovadas.
+- `../migrations/20260827101608_harden_fila_cadastro_private_rls.sql`: ativa RLS
+  na tabela privada de transições permitidas.
 
 - `foundation_prototype.sql`: cria a fundação relacional, a máquina de estados,
   RLS, grants, trilhas append-only e proteções de identidade.
