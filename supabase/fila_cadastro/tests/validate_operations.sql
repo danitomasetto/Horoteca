@@ -33,10 +33,13 @@ select pg_temp.assert_true(
 
 select pg_temp.assert_true(
   has_function_privilege('authenticated',
-    'public.finalize_watch_intake(bigint,integer,uuid)', 'EXECUTE')
-  and not has_function_privilege('anon',
     'public.finalize_watch_intake(bigint,integer,uuid)', 'EXECUTE'),
-  'RPC de finalização deve ser exclusiva de authenticated'
+  'authenticated deve poder executar a RPC de finalização'
+);
+select pg_temp.assert_true(
+  not has_function_privilege('anon',
+    'public.finalize_watch_intake(bigint,integer,uuid)', 'EXECUTE'),
+  'anon não pode executar a RPC de finalização'
 );
 
 set local role authenticated;
