@@ -144,6 +144,162 @@
         gap: 10px;
       }
 
+      .navigation {
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        gap: 8px;
+        margin: 4px 0 22px;
+        padding-bottom: 10px;
+      }
+
+      .navigation button {
+        background: transparent;
+        border-color: transparent;
+        color: var(--muted);
+      }
+
+      .navigation button.active {
+        background: rgba(214, 178, 94, 0.12);
+        border-color: rgba(214, 178, 94, 0.45);
+        color: var(--gold-soft);
+      }
+
+      .badge {
+        background: var(--gold);
+        border-radius: 999px;
+        color: #101827;
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 900;
+        margin-left: 6px;
+        min-width: 22px;
+        padding: 2px 7px;
+        text-align: center;
+      }
+
+      .section-heading {
+        align-items: end;
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .section-heading h2,
+      .section-heading p {
+        margin: 0;
+      }
+
+      .section-heading p {
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .readonly-label {
+        border: 1px solid rgba(214, 178, 94, 0.45);
+        border-radius: 999px;
+        color: var(--gold-soft);
+        font-size: 0.75rem;
+        font-weight: 900;
+        padding: 6px 10px;
+        white-space: nowrap;
+      }
+
+      .progress {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        height: 8px;
+        overflow: hidden;
+      }
+
+      .progress span {
+        background: var(--gold);
+        display: block;
+        height: 100%;
+      }
+
+      .detail-view {
+        display: grid;
+        gap: 16px;
+      }
+
+      .detail-view .section-heading button {
+        margin-bottom: 14px;
+      }
+
+      .detail-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .detail-section {
+        background: rgba(24, 33, 49, 0.86);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .detail-section.full {
+        grid-column: 1 / -1;
+      }
+
+      .detail-section h3 {
+        color: var(--gold-soft);
+        margin: 0 0 14px;
+      }
+
+      .detail-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .form-panel {
+        margin-bottom: 18px;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+      }
+
+      .form-grid .field {
+        margin-bottom: 0;
+      }
+
+      .form-help {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin: 12px 0;
+      }
+
+      .detail-item {
+        background: rgba(16, 24, 39, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .detail-item strong {
+        color: var(--gold-soft);
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .detail-item .row + .row {
+        margin-top: 7px;
+      }
+
+      .text-link {
+        color: var(--gold-soft);
+        font-weight: 800;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
       .toolbar {
         align-items: end;
         display: grid;
@@ -344,10 +500,26 @@
           flex-direction: column;
         }
 
+        .navigation,
+        .section-heading {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .navigation button {
+          text-align: left;
+        }
+
         .toolbar,
         .metrics,
-        .grid {
+        .grid,
+        .detail-grid,
+        .form-grid {
           grid-template-columns: 1fr;
+        }
+
+        .detail-section.full {
+          grid-column: auto;
         }
 
         .card-head {
@@ -367,7 +539,7 @@
     <main class="shell">
       <section id="loginView" class="login">
         <h1>Horoteca</h1>
-        <p>Entre com o mesmo login do app para visualizar a colecao no navegador.</p>
+        <p>Entre com seu e-mail e senha do Horoteca para acessar a coleção e a Fila de Cadastro.</p>
         <form id="loginForm">
           <div class="field">
             <label for="email">E-mail</label>
@@ -396,30 +568,92 @@
           </div>
         </header>
 
-        <section class="metrics">
-          <div class="metric"><strong id="metricCount">0</strong><span>Relogios</span></div>
-          <div class="metric"><strong id="metricCost">R$ 0,00</strong><span>Custo real</span></div>
-          <div class="metric"><strong id="metricValue">R$ 0,00</strong><span>Valor estimado</span></div>
-          <div class="metric"><strong id="metricResult">R$ 0,00</strong><span>Resultado potencial</span></div>
-        </section>
+        <nav class="navigation" aria-label="Áreas do Horoteca">
+          <button id="collectionTab" class="active" type="button" aria-current="page">Coleção</button>
+          <button id="intakeTab" type="button">Fila de Cadastro <span id="intakeBadge" class="badge">0</span></button>
+        </nav>
 
-        <section class="toolbar">
-          <div class="field">
-            <label for="search">Buscar</label>
-            <input id="search" placeholder="Marca, modelo, codigo ou pedido" type="search" />
-          </div>
-          <div class="field">
-            <label for="brandFilter">Marca</label>
-            <select id="brandFilter">
-              <option value="">Todas</option>
-            </select>
-          </div>
-          <button id="sortCostButton" class="secondary" type="button">Ordenar por custo</button>
-          <button id="sortCodeButton" class="secondary" type="button">Ordenar por codigo</button>
-        </section>
+        <div id="collectionView">
+          <section class="metrics">
+            <div class="metric"><strong id="metricCount">0</strong><span>Relógios</span></div>
+            <div class="metric"><strong id="metricCost">R$ 0,00</strong><span>Custo real</span></div>
+            <div class="metric"><strong id="metricValue">R$ 0,00</strong><span>Valor estimado</span></div>
+            <div class="metric"><strong id="metricResult">R$ 0,00</strong><span>Resultado potencial</span></div>
+          </section>
 
-        <p id="appStatus" class="status hidden"></p>
-        <section id="watchGrid" class="grid"></section>
+          <section class="toolbar">
+            <div class="field">
+              <label for="search">Buscar</label>
+              <input id="search" placeholder="Marca, modelo, código ou pedido" type="search" />
+            </div>
+            <div class="field">
+              <label for="brandFilter">Marca</label>
+              <select id="brandFilter">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <button id="sortCostButton" class="secondary" type="button">Ordenar por custo</button>
+            <button id="sortCodeButton" class="secondary" type="button">Ordenar por código</button>
+          </section>
+
+          <p id="appStatus" class="status hidden"></p>
+          <section id="watchGrid" class="grid"></section>
+        </div>
+
+        <div id="intakeView" class="hidden">
+          <div id="intakeOverview">
+            <header class="section-heading">
+              <div>
+                <h2>Fila de Cadastro</h2>
+                <p>Acompanhe os processos antes da inclusão definitiva na coleção.</p>
+              </div>
+              <button id="newIntakeButton" type="button">+ Novo cadastro</button>
+            </header>
+
+            <form id="newIntakeForm" class="detail-section form-panel hidden">
+              <h3>Iniciar novo cadastro</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="newIntakeTitle">Título</label>
+                  <input id="newIntakeTitle" name="title" maxlength="180" placeholder="Ex.: Seiko 5 — pedido 02-14381-05007" required />
+                </div>
+                <div class="field">
+                  <label for="newIntakeItemCount">Quantidade de relógios</label>
+                  <input id="newIntakeItemCount" name="expected_item_count" inputmode="numeric" min="1" max="100" required type="number" value="1" />
+                </div>
+              </div>
+              <p class="form-help">O Horoteca atribuirá automaticamente o próximo código e iniciará o processo como “Novo”.</p>
+              <div class="actions">
+                <button id="createIntakeButton" type="submit">Criar processo</button>
+                <button id="cancelNewIntakeButton" class="secondary" type="button">Cancelar</button>
+              </div>
+              <p id="newIntakeStatus" class="status hidden"></p>
+            </form>
+
+            <section class="metrics">
+              <div class="metric"><strong id="intakeMetricCount">0</strong><span>Processos</span></div>
+              <div class="metric"><strong id="intakeMetricDraft">0</strong><span>Rascunhos</span></div>
+              <div class="metric"><strong id="intakeMetricReview">0</strong><span>Em revisão</span></div>
+              <div class="metric"><strong id="intakeMetricItems">0</strong><span>Peças identificadas</span></div>
+            </section>
+
+            <p id="intakeStatus" class="status hidden"></p>
+            <section id="intakeGrid" class="grid"></section>
+          </div>
+
+          <div id="intakeDetailView" class="detail-view hidden">
+            <header class="section-heading">
+              <div>
+                <button id="backToIntakesButton" class="secondary" type="button">← Voltar para a fila</button>
+                <h2 id="intakeDetailTitle">Detalhes do processo</h2>
+                <p id="intakeDetailSubtitle"></p>
+              </div>
+              <span class="readonly-label">Somente leitura</span>
+            </header>
+            <p id="intakeDetailStatus" class="status hidden"></p>
+            <section id="intakeDetailContent" class="detail-grid"></section>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -438,6 +672,15 @@
         watches: [],
         histories: [],
         photos: [],
+        intakes: [],
+        selectedIntake: null,
+        intakeDetails: null,
+        expenses: [],
+        allocations: [],
+        acquisitions: [],
+        acquisitionItems: [],
+        claims: [],
+        sources: [],
         sort: "code",
       };
 
@@ -449,6 +692,25 @@
         loginStatus: document.querySelector("#loginStatus"),
         refreshButton: document.querySelector("#refreshButton"),
         logoutButton: document.querySelector("#logoutButton"),
+        collectionTab: document.querySelector("#collectionTab"),
+        intakeTab: document.querySelector("#intakeTab"),
+        intakeBadge: document.querySelector("#intakeBadge"),
+        collectionView: document.querySelector("#collectionView"),
+        intakeView: document.querySelector("#intakeView"),
+        intakeOverview: document.querySelector("#intakeOverview"),
+        intakeDetailView: document.querySelector("#intakeDetailView"),
+        newIntakeButton: document.querySelector("#newIntakeButton"),
+        newIntakeForm: document.querySelector("#newIntakeForm"),
+        newIntakeTitle: document.querySelector("#newIntakeTitle"),
+        newIntakeItemCount: document.querySelector("#newIntakeItemCount"),
+        createIntakeButton: document.querySelector("#createIntakeButton"),
+        cancelNewIntakeButton: document.querySelector("#cancelNewIntakeButton"),
+        newIntakeStatus: document.querySelector("#newIntakeStatus"),
+        backToIntakesButton: document.querySelector("#backToIntakesButton"),
+        intakeDetailTitle: document.querySelector("#intakeDetailTitle"),
+        intakeDetailSubtitle: document.querySelector("#intakeDetailSubtitle"),
+        intakeDetailStatus: document.querySelector("#intakeDetailStatus"),
+        intakeDetailContent: document.querySelector("#intakeDetailContent"),
         search: document.querySelector("#search"),
         brandFilter: document.querySelector("#brandFilter"),
         sortCostButton: document.querySelector("#sortCostButton"),
@@ -459,11 +721,50 @@
         metricCost: document.querySelector("#metricCost"),
         metricValue: document.querySelector("#metricValue"),
         metricResult: document.querySelector("#metricResult"),
+        intakeStatus: document.querySelector("#intakeStatus"),
+        intakeGrid: document.querySelector("#intakeGrid"),
+        intakeMetricCount: document.querySelector("#intakeMetricCount"),
+        intakeMetricDraft: document.querySelector("#intakeMetricDraft"),
+        intakeMetricReview: document.querySelector("#intakeMetricReview"),
+        intakeMetricItems: document.querySelector("#intakeMetricItems"),
       };
 
       function show(view) {
         els.loginView.classList.toggle("hidden", view !== "login");
         els.appView.classList.toggle("hidden", view !== "app");
+      }
+
+      function showArea(area) {
+        const showCollection = area === "collection";
+        els.collectionView.classList.toggle("hidden", !showCollection);
+        els.intakeView.classList.toggle("hidden", showCollection);
+        els.collectionTab.classList.toggle("active", showCollection);
+        els.intakeTab.classList.toggle("active", !showCollection);
+        els.collectionTab.toggleAttribute("aria-current", showCollection);
+        els.intakeTab.toggleAttribute("aria-current", !showCollection);
+        if (!showCollection) showIntakeOverview();
+      }
+
+      function showIntakeOverview() {
+        els.intakeOverview.classList.remove("hidden");
+        els.intakeDetailView.classList.add("hidden");
+        els.intakeDetailContent.innerHTML = "";
+        status(els.intakeDetailStatus, "");
+        state.selectedIntake = null;
+        state.intakeDetails = null;
+      }
+
+      function showNewIntakeForm() {
+        els.newIntakeForm.classList.remove("hidden");
+        status(els.newIntakeStatus, "");
+        els.newIntakeTitle.focus();
+      }
+
+      function hideNewIntakeForm() {
+        els.newIntakeForm.classList.add("hidden");
+        els.newIntakeForm.reset();
+        els.newIntakeItemCount.value = "1";
+        status(els.newIntakeStatus, "");
       }
 
       function status(target, message, isError = false) {
@@ -501,32 +802,90 @@
         });
       }
 
+      async function createIntake(title, expectedItemCount) {
+        const rows = await request(
+          "/rest/v1/watch_intakes?select=id,intake_code,intake_number,title,notes,status,current_stage,version,expected_item_count,identified_item_count,updated_at",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              title: title.trim(),
+              expected_item_count: expectedItemCount,
+            }),
+            headers: { Prefer: "return=representation" },
+          },
+        );
+        if (!Array.isArray(rows) || rows.length !== 1) {
+          throw new Error("O servidor não confirmou a criação do processo.");
+        }
+        return rows[0];
+      }
+
       async function loadData() {
         status(els.appStatus, "Carregando colecao...");
-        const [watches, histories, photos] = await Promise.all([
+        status(els.intakeStatus, "Carregando fila...");
+        const [watches, events, legacyHistory, photos, expenses, allocations, acquisitions, acquisitionItems, sources, claims, intakes] = await Promise.all([
           request("/rest/v1/watches?select=*&order=horoteca_code.asc"),
+          request("/rest/v1/watch_events?select=*&order=event_date.desc"),
           request("/rest/v1/maintenance_logs?select=*&order=event_date.desc"),
           request(
             "/rest/v1/watch_photos?select=watch_id,storage_path,caption,is_cover,sort_order&order=sort_order.asc",
           ).catch(() => []),
+          request("/rest/v1/expenses?select=*"),
+          request("/rest/v1/expense_allocations?select=*"),
+          request("/rest/v1/acquisitions?select=*"),
+          request("/rest/v1/acquisition_items?select=*"),
+          request("/rest/v1/watch_sources?select=*"),
+          request("/rest/v1/watch_claims?select=*"),
+          request("/rest/v1/watch_intakes?select=id,intake_code,intake_number,title,notes,status,current_stage,version,expected_item_count,identified_item_count,updated_at&order=intake_number.asc"),
         ]);
+        state.expenses = expenses;
+        state.allocations = allocations;
+        state.acquisitions = acquisitions;
+        state.acquisitionItems = acquisitionItems;
+        state.sources = sources;
+        state.claims = claims;
+        state.intakes = intakes;
+        const watchesWithEvents = new Set(events.map((event) => event.watch_id));
+        state.histories = [
+          ...events,
+          ...legacyHistory.filter((item) => !watchesWithEvents.has(item.watch_id)),
+        ].map(normalizeHistory);
         state.watches = watches.map(normalizeWatch);
-        state.histories = histories.map(normalizeHistory);
         state.photos = photos;
         buildBrandFilter();
         render();
+        renderIntakes();
         status(els.appStatus, "");
+        status(els.intakeStatus, "");
       }
 
       function normalizeWatch(row) {
-        const historyTotal = () =>
-          state.histories
-            .filter((item) => item.watch_id === row.id)
-            .reduce((sum, item) => sum + (item.amount_brl || item.cost || 0), 0);
+        const directExpenses = () => state.expenses.filter(
+          (item) => item.watch_id === row.id && !item.is_shared,
+        );
+        const allocatedExpenses = () => state.allocations.filter(
+          (item) => item.watch_id === row.id,
+        );
+        const item = state.acquisitionItems.find((value) => value.watch_id === row.id);
+        const acquisition = item
+          ? state.acquisitions.find((value) => value.id === item.acquisition_id)
+          : null;
         return {
           ...row,
+          acquisition,
+          acquisitionItem: item,
+          sources: state.sources.filter((source) => source.watch_id === row.id),
+          claims: state.claims.filter((claim) => claim.watch_id === row.id),
+          expenses: directExpenses(),
+          allocations: allocatedExpenses(),
           totalInvested() {
-            return historyTotal() || row.purchase_total_brl || row.purchase_price || 0;
+            const direct = directExpenses().reduce(
+              (sum, item) => sum + Number(item.amount_brl || 0), 0,
+            );
+            const allocated = allocatedExpenses().reduce(
+              (sum, item) => sum + Number(item.amount_brl_allocated || 0), 0,
+            );
+            return direct + allocated || row.purchase_total_brl || row.purchase_price || 0;
           },
           valueEstimate() {
             return row.estimated_value || 0;
@@ -577,6 +936,7 @@
             watch.order_number,
             watch.marketplace_item_id,
             watch.seller_name,
+            watch.acquisitionItem?.listing_title,
           ]
             .filter(Boolean)
             .join(" ")
@@ -611,6 +971,316 @@
         els.metricResult.textContent = money.format(value - cost);
       }
 
+      function renderIntakes() {
+        const draftCount = state.intakes.filter((intake) => intake.status === "draft").length;
+        const reviewCount = state.intakes.filter((intake) =>
+          String(intake.current_stage || "").startsWith("review"),
+        ).length;
+        const itemCount = state.intakes.reduce(
+          (sum, intake) => sum + Number(intake.identified_item_count || 0),
+          0,
+        );
+
+        els.intakeBadge.textContent = state.intakes.length;
+        els.intakeMetricCount.textContent = state.intakes.length;
+        els.intakeMetricDraft.textContent = draftCount;
+        els.intakeMetricReview.textContent = reviewCount;
+        els.intakeMetricItems.textContent = itemCount;
+        els.intakeGrid.innerHTML = "";
+
+        if (!state.intakes.length) {
+          els.intakeGrid.innerHTML = '<div class="empty">Nenhum processo na fila.</div>';
+          return;
+        }
+
+        for (const intake of state.intakes) {
+          const identified = Number(intake.identified_item_count || 0);
+          const expected = Number(intake.expected_item_count || 0);
+          const progress = expected ? Math.min(100, Math.round((identified / expected) * 100)) : 0;
+          const article = document.createElement("article");
+          article.className = "card";
+          article.innerHTML = `
+            <div class="card-head">
+              <div class="thumb">${escapeHtml(intake.intake_code || "H")}</div>
+              <div class="title">
+                <div class="code">${escapeHtml(intake.intake_code || "Sem código")}</div>
+                <h2>${escapeHtml(intake.title || "Cadastro sem título")}</h2>
+                <p>${escapeHtml(intakeStatusLabel(intake.status))} • ${escapeHtml(intakeStageLabel(intake.current_stage))}</p>
+              </div>
+            </div>
+            <div class="card-body">
+              ${row("Situação", intakeStatusLabel(intake.status))}
+              ${row("Etapa atual", intakeStageLabel(intake.current_stage))}
+              ${row("Peças identificadas", `${identified} de ${expected}`)}
+              <div class="progress" aria-label="${progress}% das peças identificadas"><span style="width: ${progress}%"></span></div>
+              ${row("Versão", `V${Number(intake.version || 1)}`)}
+              ${row("Atualizado", formatDateTime(intake.updated_at))}
+              <button class="secondary intake-details-button" data-intake-id="${intake.id}" type="button">Ver detalhes</button>
+            </div>
+          `;
+          els.intakeGrid.append(article);
+        }
+
+        for (const button of els.intakeGrid.querySelectorAll(".intake-details-button")) {
+          button.addEventListener("click", () => openIntakeDetail(Number(button.dataset.intakeId)));
+        }
+      }
+
+      async function openIntakeDetail(intakeId) {
+        const intake = state.intakes.find((item) => item.id === intakeId);
+        if (!intake) return;
+
+        hideNewIntakeForm();
+        state.selectedIntake = intake;
+        els.intakeOverview.classList.add("hidden");
+        els.intakeDetailView.classList.remove("hidden");
+        els.intakeDetailTitle.textContent = `${intake.intake_code} — ${intake.title || "Cadastro sem título"}`;
+        els.intakeDetailSubtitle.textContent = `${intakeStatusLabel(intake.status)} • ${intakeStageLabel(intake.current_stage)} • V${intake.version}`;
+        els.intakeDetailContent.innerHTML = "";
+        status(els.intakeDetailStatus, "Carregando detalhes protegidos...");
+
+        const filter = `intake_id=eq.${encodeURIComponent(intakeId)}`;
+        try {
+          const [documents, acquisitions, items, expenses, sources, claims, photos, transitions] = await Promise.all([
+            request(`/rest/v1/watch_intake_documents?select=id,document_role,display_name,original_name,url,status,document_version,is_accessible,provider_modified_at,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_acquisitions?select=id,marketplace,seller_name,order_number,purchase_date,purchase_payment_date,taxes_payment_date,shipped_date,estimated_delivery_date,received_date,payment_method,carrier,tracking_number,match_status,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_items?select=id,item_sequence,visual_position,order_number,order_item_number,marketplace_item_id,candidate_horoteca_code,candidate_brand,candidate_model,candidate_reference_number,candidate_movement_type,candidate_serial_number,candidate_case_code,candidate_dial_code,candidate_watch_data,brand_match_status,model_match_status,caliber_match_status&${filter}&order=item_sequence.asc`),
+            request(`/rest/v1/watch_intake_expenses?select=id,item_id,category,description,expense_date,currency,amount_original,exchange_rate,amount_brl,is_shared,allocation_method,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_sources?select=id,item_id,source_type,title,url,evidence_classification,confidence_percent,excerpt,accessed_at,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_claims?select=id,item_id,field_name,asserted_value,asserted_by_type,evidence_classification,verification_status,confidence_percent,context&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_photos?select=id,original_url,storage_path,origin_type,visual_position,evidence_classification,display_order,copy_status,notes&${filter}&order=display_order.asc`),
+            request(`/rest/v1/watch_intake_transitions?select=id,from_status,to_status,intake_version,actor_type,reason,created_at&${filter}&order=created_at.asc`),
+          ]);
+          state.intakeDetails = { documents, acquisitions, items, expenses, sources, claims, photos, transitions };
+          renderIntakeDetail();
+          status(els.intakeDetailStatus, "");
+        } catch (error) {
+          status(els.intakeDetailStatus, `Não foi possível carregar os detalhes: ${error.message}`, true);
+        }
+      }
+
+      function renderIntakeDetail() {
+        const intake = state.selectedIntake;
+        const details = state.intakeDetails;
+        if (!intake || !details) return;
+
+        const general = `
+          ${row("Código", escapeHtml(intake.intake_code))}
+          ${row("Situação", escapeHtml(intakeStatusLabel(intake.status)))}
+          ${row("Etapa", escapeHtml(intakeStageLabel(intake.current_stage)))}
+          ${row("Peças", `${Number(intake.identified_item_count || 0)} de ${Number(intake.expected_item_count || 0)}`)}
+          ${row("Versão", `V${Number(intake.version || 1)}`)}
+          ${row("Atualizado", escapeHtml(formatDateTime(intake.updated_at)))}
+          ${intake.notes ? row("Observação", escapeHtml(intake.notes)) : ""}
+        `;
+
+        const documents = details.documents.length
+          ? details.documents.map((document) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(document.display_name || document.original_name)}</strong>
+                ${row("Tipo", escapeHtml(documentRoleLabel(document.document_role)))}
+                ${row("Versão", `V${Number(document.document_version || 1)}`)}
+                ${row("Acessível", yesNoUnknown(document.is_accessible))}
+                ${document.notes ? row("Observação", escapeHtml(document.notes)) : ""}
+                ${safeExternalLink(document.url, "Abrir documento original")}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhum documento registrado.");
+
+        const items = details.items.length
+          ? details.items.map((item) => {
+              const claimedReference = item.candidate_watch_data?.reference_claim;
+              const claimedCaliber = item.candidate_watch_data?.caliber_claim;
+              return `
+                <div class="detail-item">
+                  <strong>Peça ${Number(item.item_sequence)} — ${escapeHtml(item.candidate_brand || "Marca pendente")} ${escapeHtml(item.candidate_model || "")}</strong>
+                  ${row("Código candidato", escapeHtml(item.candidate_horoteca_code || "Não informado"))}
+                  ${row("Pedido", escapeHtml(item.order_number || "Não informado"))}
+                  ${row("Item do anúncio", escapeHtml(item.marketplace_item_id || "Não informado"))}
+                  ${row("Referência confirmada", escapeHtml(item.candidate_reference_number || "Ainda não confirmada"))}
+                  ${claimedReference ? row("Referência alegada", `${escapeHtml(claimedReference)} <span class="muted">(pendente)</span>`) : ""}
+                  ${row("Calibre confirmado", escapeHtml(item.candidate_movement_type || "Ainda não confirmado"))}
+                  ${claimedCaliber ? row("Calibre alegado", `${escapeHtml(claimedCaliber)} <span class="muted">(pendente)</span>`) : ""}
+                  ${row("Série", escapeHtml(item.candidate_serial_number || "Não informada"))}
+                </div>
+              `;
+            }).join("")
+          : detailEmpty("Nenhuma peça identificada.");
+
+        const acquisitions = details.acquisitions.length
+          ? details.acquisitions.map((acquisition) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(acquisition.order_number || "Aquisição sem pedido")}</strong>
+                ${row("Marketplace", escapeHtml(acquisition.marketplace || "Não informado"))}
+                ${row("Vendedor", escapeHtml(acquisition.seller_name || "Não informado"))}
+                ${row("Compra", escapeHtml(parseDate(acquisition.purchase_date) || "Não informada"))}
+                ${row("Rastreamento", escapeHtml(acquisition.tracking_number || "Não informado"))}
+                ${row("Correspondência", escapeHtml(matchStatusLabel(acquisition.match_status)))}
+              </div>
+            `).join("")
+          : detailEmpty("A aquisição ainda não foi estruturada nesta versão.");
+
+        const expenses = details.expenses.length
+          ? details.expenses.map((expense) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(expense.description || expense.category)}</strong>
+                ${row("Categoria", escapeHtml(expense.category))}
+                ${row("Valor original", escapeHtml(originalExpenseMoney(expense)))}
+                ${row("Valor em reais", expense.amount_brl == null ? "Não informado" : money.format(expense.amount_brl))}
+                ${row("Compartilhada", expense.is_shared ? "Sim" : "Não")}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhuma despesa estruturada nesta versão.");
+
+        const evidence = [...details.sources.map(renderIntakeSource), ...details.claims.map(renderIntakeClaim)].join("")
+          || detailEmpty("Não há fontes ou alegações estruturadas nesta versão.");
+
+        const photos = details.photos.length
+          ? details.photos.map((photo) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(photo.visual_position || photo.origin_type || "Foto")}</strong>
+                ${row("Evidência", escapeHtml(evidenceLabel(photo.evidence_classification)))}
+                ${row("Cópia", escapeHtml(photo.copy_status || "Não informada"))}
+                ${safeExternalLink(photo.original_url, "Abrir foto original")}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhuma foto vinculada ao processo.");
+
+        const transitions = details.transitions.length
+          ? details.transitions.map((transition) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(formatDateTime(transition.created_at))} — ${escapeHtml(intakeStatusLabel(transition.to_status))}</strong>
+                ${row("Origem", escapeHtml(transition.from_status ? intakeStatusLabel(transition.from_status) : "Início do histórico"))}
+                ${row("Responsável", escapeHtml(actorTypeLabel(transition.actor_type)))}
+                ${transition.reason ? row("Motivo", escapeHtml(transition.reason)) : ""}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhuma movimentação registrada.");
+
+        els.intakeDetailContent.innerHTML = [
+          detailSection("Resumo do processo", general, true),
+          detailSection(`Documentos (${details.documents.length})`, documents),
+          detailSection(`Peças (${details.items.length})`, items),
+          detailSection(`Aquisições (${details.acquisitions.length})`, acquisitions),
+          detailSection(`Custos (${details.expenses.length})`, expenses),
+          detailSection(`Fontes e alegações (${details.sources.length + details.claims.length})`, evidence),
+          detailSection(`Fotos (${details.photos.length})`, photos),
+          detailSection(`Histórico (${details.transitions.length})`, transitions, true),
+        ].join("");
+      }
+
+      function detailSection(title, content, full = false) {
+        return `<section class="detail-section${full ? " full" : ""}"><h3>${escapeHtml(title)}</h3><div class="detail-list">${content}</div></section>`;
+      }
+
+      function detailEmpty(message) {
+        return `<div class="detail-item muted">${escapeHtml(message)}</div>`;
+      }
+
+      function safeExternalLink(url, label) {
+        if (!url) return "";
+        try {
+          const parsed = new URL(url);
+          if (parsed.protocol !== "https:") return "";
+          return `<a class="text-link" href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)} ↗</a>`;
+        } catch {
+          return "";
+        }
+      }
+
+      function renderIntakeSource(source) {
+        return `<div class="detail-item"><strong>${escapeHtml(source.title || source.source_type)}</strong>${row("Evidência", escapeHtml(evidenceLabel(source.evidence_classification)))}${source.confidence_percent == null ? "" : row("Confiança", `${Number(source.confidence_percent)}%`)}${safeExternalLink(source.url, "Abrir fonte")}</div>`;
+      }
+
+      function renderIntakeClaim(claim) {
+        return `<div class="detail-item"><strong>${escapeHtml(claim.field_name)}</strong>${row("Valor alegado", escapeHtml(claim.asserted_value))}${row("Evidência", escapeHtml(evidenceLabel(claim.evidence_classification)))}${row("Verificação", escapeHtml(claimStatusLabel(claim.verification_status)))}</div>`;
+      }
+
+      function intakeStatusLabel(value) {
+        return ({
+          new: "Novo",
+          draft: "Rascunho",
+          submitted_for_review_01: "Enviado para revisão 01",
+          review_01_in_progress: "Revisão 01 em andamento",
+          review_01_corrections_requested: "Correções da revisão 01",
+          review_01_approved: "Revisão 01 aprovada",
+          submitted_for_review_02: "Enviado para revisão 02",
+          review_02_in_progress: "Revisão 02 em andamento",
+          review_02_corrections_requested: "Correções da revisão 02",
+          review_02_approved: "Revisão 02 aprovada",
+          submitted_for_review_03: "Enviado para revisão 03",
+          review_03_in_progress: "Revisão 03 em andamento",
+          review_03_corrections_requested: "Correções da revisão 03",
+          review_03_approved: "Revisão 03 aprovada",
+          awaiting_owner_approval: "Aguardando sua aprovação",
+          owner_corrections_requested: "Correções solicitadas pelo proprietário",
+          owner_approved: "Aprovado pelo proprietário",
+          finalization_ready: "Pronto para finalizar",
+          finalizing: "Finalizando",
+          finalization_failed: "Falha na finalização",
+          completed: "Concluído",
+          cancelled: "Cancelado",
+        })[value] || value || "Não informado";
+      }
+
+      function intakeStageLabel(value) {
+        const match = String(value || "").match(/^review_(\d+)$/);
+        if (match) return `Revisão ${match[1]}`;
+        return ({ draft: "Rascunho", completed: "Concluído" })[value] || value || "Não informada";
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "Não informado";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      }
+
+      function documentRoleLabel(value) {
+        return ({
+          source_a: "Documento A — fonte original",
+          working_b: "Documento B — trabalho",
+          approved_b: "Documento B — aprovado",
+          support: "Documento de apoio",
+        })[value] || value || "Não informado";
+      }
+
+      function matchStatusLabel(value) {
+        return ({
+          unreviewed: "Não revisada",
+          exact_match: "Correspondência exata",
+          explicit_new: "Novo cadastro explícito",
+          ambiguous: "Ambígua",
+          not_applicable: "Não aplicável",
+        })[value] || value || "Não informado";
+      }
+
+      function claimStatusLabel(value) {
+        return ({
+          pending: "Pendente",
+          accepted: "Aceita",
+          rejected: "Rejeitada",
+          superseded: "Substituída",
+        })[value] || value || "Não informado";
+      }
+
+      function actorTypeLabel(value) {
+        return ({
+          owner: "Proprietário",
+          user: "Usuário",
+          server_agent: "Agente do sistema",
+          system: "Sistema",
+          historical_import: "Importação histórica",
+        })[value] || value || "Não informado";
+      }
+
+      function originalExpenseMoney(expense) {
+        if (expense.currency && expense.amount_original != null) {
+          return `${expense.currency} ${Number(expense.amount_original).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        }
+        return "Não informado";
+      }
+
       function renderCard(watch) {
         const history = state.histories.filter((item) => item.watch_id === watch.id);
         const total = watch.totalInvested();
@@ -628,19 +1298,60 @@
             </div>
           </div>
           <div class="card-body">
-            ${row("Pedido", watch.order_number || "Nao informado")}
-            ${row("Item eBay", watch.marketplace_item_id || "Nao informado")}
-            ${row("Vendedor", watch.seller_name || "Nao informado")}
+            ${row("Código Horoteca", watch.horoteca_code || "Não informado")}
+            ${row("Referência", watch.reference_number || "Não informada")}
+            ${row("Número de série", watch.serial_number || "Não informado")}
+            ${row("Ano ou período", watchPeriod(watch))}
+            ${row("Pedido", watch.acquisition?.order_number || watch.order_number || "Não informado")}
+            ${row("Item do pedido", watch.acquisitionItem?.item_sequence || watch.order_item_number || "Não informado")}
+            ${row("Marketplace", watch.acquisition?.marketplace || watch.marketplace || "Não informado")}
+            ${row("Item do anúncio", watch.acquisitionItem?.marketplace_item_id || watch.marketplace_item_id || "Não informado")}
+            ${row("Vendedor", watch.acquisition?.seller_name || watch.seller_name || "Não informado")}
+            ${row("Data da compra", parseDate(watch.acquisition?.purchase_date || watch.purchase_date) || "Não informada")}
+            ${row("Pagamento dos impostos", parseDate(watch.acquisition?.taxes_payment_date) || "Não informado")}
+            ${row("Entrega prevista", parseDate(watch.acquisition?.estimated_delivery_date) || "Não informada")}
+            ${row("Recebimento", parseDate(watch.acquisition?.received_date) || "Não informado")}
+            ${row("Título do anúncio", watch.acquisitionItem?.listing_title || "Não informado")}
+            ${row("Categoria do anúncio", watch.acquisitionItem?.listing_category || "Não informada")}
+            ${row("Condição declarada", [watch.acquisitionItem?.seller_condition_label, watch.acquisitionItem?.seller_condition_description].filter(Boolean).join(" • ") || "Não informada")}
             ${row("Compra", originalMoney(watch))}
             ${row("Custo real", money.format(total))}
-            ${row("Valor estimado", estimated ? money.format(estimated) : "Nao informado")}
+            ${row("Valor estimado", estimated ? money.format(estimated) : "Não informado")}
             ${row("Resultado", `<span class="${result >= 0 ? "result-ok" : "result-bad"}">${money.format(result)}</span>`)}
-            ${row("Estado", watch.condition || "Nao informado")}
+            ${row("Estado", watch.condition || "Não informado")}
+            ${row("Funcionamento", watch.function_status || "Não informado")}
+            ${row("Movimento", [watch.movement_type, watch.movement_caliber].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Tipo / exibição / público", [watch.watch_type, watch.display_type, watch.intended_audience].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Caixa", [watch.case_material, watch.case_finish, watch.case_shape].filter(Boolean).join(" • ") || "Não informado")}
+            ${row("Luneta", [watch.bezel_type, watch.bezel_material, watch.bezel_color].filter(Boolean).join(" • ") || "Não informada")}
+            ${row("Mostrador", watch.dial_description || watch.dial_color || "Não informado")}
+            ${row("Pulseira", [watch.strap_description || watch.strap_material, watch.strap_color].filter(Boolean).join(" • ") || "Não informada")}
+            ${row("Caixa original", yesNoUnknown(watch.has_original_box))}
+            ${row("Documentos originais", yesNoUnknown(watch.has_original_papers))}
+            ${row("Personalizado", yesNoUnknown(watch.is_customized))}
           </div>
           <details>
-            <summary>Historico e gastos (${history.length})</summary>
+            <summary>Custos estruturados (${watch.expenses.length + watch.allocations.length})</summary>
             <div class="history">
-              ${history.length ? history.map(renderHistory).join("") : '<div class="history-item"><p>Nenhum historico registrado.</p></div>'}
+              ${renderExpenses(watch)}
+            </div>
+          </details>
+          <details>
+            <summary>Histórico e manutenções (${history.length})</summary>
+            <div class="history">
+              ${history.length ? history.map(renderHistory).join("") : '<div class="history-item"><p>Nenhum histórico registrado.</p></div>'}
+            </div>
+          </details>
+          <details>
+            <summary>Fontes e evidências (${watch.sources.length})</summary>
+            <div class="history">
+              ${watch.sources.length ? watch.sources.map(renderSource).join("") : '<div class="history-item"><p>Nenhuma fonte estruturada.</p></div>'}
+            </div>
+          </details>
+          <details>
+            <summary>Alegações e pendências (${watch.claims.length})</summary>
+            <div class="history">
+              ${watch.claims.length ? watch.claims.map(renderClaim).join("") : '<div class="history-item"><p>Nenhuma alegação pendente.</p></div>'}
             </div>
           </details>
         `;
@@ -661,6 +1372,58 @@
             <p>${escapeHtml(item.description || "Historico")} ${item.amount_brl ? `- ${money.format(item.amount_brl)}` : ""}</p>
           </div>
         `;
+      }
+
+      function renderExpenses(watch) {
+        const direct = watch.expenses.map((item) => ({
+          label: item.description || item.category,
+          amount: item.amount_brl,
+          method: item.allocation_method,
+        }));
+        const allocated = watch.allocations.map((item) => ({
+          label: "Despesa rateada",
+          amount: item.amount_brl_allocated,
+          method: item.allocation_basis,
+        }));
+        const values = [...direct, ...allocated];
+        return values.length
+          ? values.map((item) => `<div class="history-item"><strong>${escapeHtml(item.label)}</strong><p>${item.amount == null ? "Valor em reais não informado" : money.format(item.amount)}${item.method ? ` • ${escapeHtml(item.method)}` : ""}</p></div>`).join("")
+          : '<div class="history-item"><p>Nenhuma despesa estruturada.</p></div>';
+      }
+
+      function renderSource(source) {
+        return `<div class="history-item"><strong>${escapeHtml(source.source_name || source.source_type || "Fonte")}</strong><p>${escapeHtml(evidenceLabel(source.evidence_classification))}${source.confidence_percent == null ? "" : ` • ${source.confidence_percent}%`}</p></div>`;
+      }
+
+      function renderClaim(claim) {
+        const status = ({ pending: "Pendente", accepted: "Aceita", rejected: "Rejeitada", superseded: "Substituída" })[claim.verification_status] || claim.verification_status;
+        return `<div class="history-item"><strong>${escapeHtml(claim.field_name)}</strong><p>${escapeHtml(claim.asserted_value)} • ${escapeHtml(evidenceLabel(claim.evidence_classification))} • ${escapeHtml(status)}</p></div>`;
+      }
+
+      function yesNoUnknown(value) {
+        return value == null ? "Não informado" : value ? "Sim" : "Não";
+      }
+
+      function evidenceLabel(value) {
+        return ({
+          document_confirmed: "Confirmado por documento",
+          seller_statement: "Declaração do vendedor",
+          visual_observation: "Observação visual",
+          researched: "Pesquisado",
+          estimated: "Estimado",
+          missing: "Ausente",
+          inconsistent: "Inconsistente",
+        })[value] || value || "Não classificado";
+      }
+
+      function watchPeriod(watch) {
+        if (watch.manufacture_year) {
+          return `${watch.manufacture_year}${watch.manufacture_year_is_estimated ? " (estimado)" : ""}`;
+        }
+        if (watch.production_period_start_year && watch.production_period_end_year) {
+          return `${watch.production_period_start_year}–${watch.production_period_end_year}`;
+        }
+        return watch.production_period_start_year || watch.production_period_end_year || "Não informado";
       }
 
       function row(label, value) {
@@ -702,12 +1465,54 @@
         }
       });
 
+      els.newIntakeButton.addEventListener("click", showNewIntakeForm);
+      els.cancelNewIntakeButton.addEventListener("click", hideNewIntakeForm);
+      els.newIntakeForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const title = String(form.get("title") || "").trim();
+        const expectedItemCount = Number(form.get("expected_item_count"));
+
+        if (!title) {
+          status(els.newIntakeStatus, "Informe um título para o cadastro.", true);
+          return;
+        }
+        if (!Number.isInteger(expectedItemCount) || expectedItemCount < 1 || expectedItemCount > 100) {
+          status(els.newIntakeStatus, "Informe uma quantidade entre 1 e 100.", true);
+          return;
+        }
+
+        els.createIntakeButton.disabled = true;
+        status(els.newIntakeStatus, "Criando processo protegido...");
+        try {
+          const created = await createIntake(title, expectedItemCount);
+          hideNewIntakeForm();
+          await loadData();
+          showArea("intake");
+          status(els.intakeStatus, `${created.intake_code} criado com sucesso.`);
+        } catch (error) {
+          status(els.newIntakeStatus, `Não foi possível criar: ${error.message}`, true);
+        } finally {
+          els.createIntakeButton.disabled = false;
+        }
+      });
+
       els.refreshButton.addEventListener("click", loadData);
+      els.collectionTab.addEventListener("click", () => showArea("collection"));
+      els.intakeTab.addEventListener("click", () => showArea("intake"));
+      els.backToIntakesButton.addEventListener("click", showIntakeOverview);
       els.logoutButton.addEventListener("click", () => {
         localStorage.removeItem("horotecaSession");
         state.session = null;
         state.watches = [];
         state.histories = [];
+        state.claims = [];
+        state.intakes = [];
+        state.selectedIntake = null;
+        state.intakeDetails = null;
+        els.intakeBadge.textContent = "0";
+        hideNewIntakeForm();
+        showArea("collection");
         show("login");
       });
       els.search.addEventListener("input", render);
