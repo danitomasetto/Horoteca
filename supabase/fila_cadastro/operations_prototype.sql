@@ -1545,7 +1545,6 @@ alter function public.decide_watch_intake(bigint, integer, text, bigint, jsonb, 
 alter function public.finalize_watch_intake(bigint, integer, uuid)
   owner to horoteca_intake_executor;
 revoke create on schema public from horoteca_intake_executor;
-revoke horoteca_intake_executor from postgres;
 
 revoke all on function public.transition_watch_intake(bigint, integer, text, text)
   from public, anon;
@@ -1583,3 +1582,4 @@ grant execute on function horoteca_private.require_authenticated_owner(uuid),
   horoteca_private.require_horoteca_owner(uuid),
   horoteca_private.stage_for_status(text)
 to horoteca_intake_executor;
+revoke horoteca_intake_executor from postgres;
