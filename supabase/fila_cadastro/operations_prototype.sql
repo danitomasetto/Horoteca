@@ -12,7 +12,8 @@ begin
 end;
 $$;
 
-grant usage on schema public, horoteca_private to horoteca_intake_executor;
+grant usage on schema public, auth, horoteca_private to horoteca_intake_executor;
+grant execute on function auth.uid() to horoteca_intake_executor;
 
 grant select, insert, update, delete on
   public.watch_intakes,
