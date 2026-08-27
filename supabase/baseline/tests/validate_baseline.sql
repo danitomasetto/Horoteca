@@ -30,47 +30,40 @@ from jsonb_to_recordset($expected$[{"table_name":"acquisition_items","constraint
 );
 
 select pg_temp.assert_catalog(
-  '81 constraints',
-  (select to_jsonb(count(*)) from pg_constraint constraint_catalog
-   join pg_class relation on relation.oid = constraint_catalog.conrelid
-   join pg_namespace namespace on namespace.oid = relation.relnamespace
-   where namespace.nspname = 'public'),
-  '81'::jsonb
+  '81 constraints e metadados estruturais',
+  (with actual_constraints as (
+     select jsonb_build_object(
+       'table_name', relation.relname,
+       'constraint_name', constraint_catalog.conname,
+       'constraint_type', constraint_catalog.contype::text,
+       'definition', pg_get_constraintdef(constraint_catalog.oid),
+       'condeferrable', constraint_catalog.condeferrable,
+       'condeferred', constraint_catalog.condeferred,
+       'convalidated', constraint_catalog.convalidated,
+       'referenced_schema', referenced_namespace.nspname,
+       'referenced_table', referenced_relation.relname
+     ) as element
+     from pg_constraint constraint_catalog
+     join pg_class relation on relation.oid = constraint_catalog.conrelid
+     join pg_namespace namespace on namespace.oid = relation.relnamespace
+     left join pg_class referenced_relation on referenced_relation.oid = constraint_catalog.confrelid
+     left join pg_namespace referenced_namespace on referenced_namespace.oid = referenced_relation.relnamespace
+     where namespace.nspname = 'public'
+   )
+   select coalesce(
+     jsonb_agg(element - 'definition' order by element->>'table_name', element->>'constraint_name'),
+     '[]'::jsonb
+   )
+   from actual_constraints),
+  (select coalesce(
+     jsonb_agg(to_jsonb(expected) - 'definition' order by table_name, constraint_name),
+     '[]'::jsonb
+   )
+   from expected_baseline_constraints expected)
 );
 
 select pg_temp.assert_catalog(
-  'metadados estruturais das constraints',
-  (select coalesce(jsonb_agg(jsonb_build_object(
-      'table_name', relation.relname,
-      'constraint_name', constraint_catalog.conname,
-      'constraint_type', constraint_catalog.contype::text,
-      'condeferrable', constraint_catalog.condeferrable,
-      'condeferred', constraint_catalog.condeferred,
-      'convalidated', constraint_catalog.convalidated,
-      'referenced_schema', referenced_namespace.nspname,
-      'referenced_table', referenced_relation.relname
-    ) order by relation.relname, constraint_catalog.conname), '[]'::jsonb)
-   from pg_constraint constraint_catalog
-   join pg_class relation on relation.oid = constraint_catalog.conrelid
-   join pg_namespace namespace on namespace.oid = relation.relnamespace
-   left join pg_class referenced_relation on referenced_relation.oid = constraint_catalog.confrelid
-   left join pg_namespace referenced_namespace on referenced_namespace.oid = referenced_relation.relnamespace
-   where namespace.nspname = 'public'),
-  (select coalesce(jsonb_agg(jsonb_build_object(
-      'table_name', table_name,
-      'constraint_name', constraint_name,
-      'constraint_type', constraint_type,
-      'condeferrable', condeferrable,
-      'condeferred', condeferred,
-      'convalidated', convalidated,
-      'referenced_schema', referenced_schema,
-      'referenced_table', referenced_table
-    ) order by table_name, constraint_name), '[]'::jsonb)
-   from expected_baseline_constraints)
-);
-
-select pg_temp.assert_catalog(
-  'definições de primary keys, foreign keys e UNIQUE constraints',
+  'definições PK/FK/UNIQUE',
   (select coalesce(jsonb_agg(jsonb_build_object(
       'table_name', relation.relname,
       'constraint_name', constraint_catalog.conname,
@@ -156,7 +149,7 @@ begin
         actual_definition;
     end if;
   end loop;
-  raise notice 'OK: definições CHECK canonicalizadas pelo parser PostgreSQL local';
+  raise notice 'OK: definições CHECK canonicalizadas';
 end;
 $$;
 
