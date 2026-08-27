@@ -2,7 +2,7 @@ name: Deploy Horoteca Web
 
 on:
   push:
-    branches: [main, master, codex/corrigir-deploy-pages]
+    branches: [main, master]
     paths:
       - horoteca-web/**
       - .github/workflows/pages.yml
