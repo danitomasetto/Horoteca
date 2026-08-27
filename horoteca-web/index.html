@@ -144,6 +144,80 @@
         gap: 10px;
       }
 
+      .navigation {
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        gap: 8px;
+        margin: 4px 0 22px;
+        padding-bottom: 10px;
+      }
+
+      .navigation button {
+        background: transparent;
+        border-color: transparent;
+        color: var(--muted);
+      }
+
+      .navigation button.active {
+        background: rgba(214, 178, 94, 0.12);
+        border-color: rgba(214, 178, 94, 0.45);
+        color: var(--gold-soft);
+      }
+
+      .badge {
+        background: var(--gold);
+        border-radius: 999px;
+        color: #101827;
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 900;
+        margin-left: 6px;
+        min-width: 22px;
+        padding: 2px 7px;
+        text-align: center;
+      }
+
+      .section-heading {
+        align-items: end;
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .section-heading h2,
+      .section-heading p {
+        margin: 0;
+      }
+
+      .section-heading p {
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .readonly-label {
+        border: 1px solid rgba(214, 178, 94, 0.45);
+        border-radius: 999px;
+        color: var(--gold-soft);
+        font-size: 0.75rem;
+        font-weight: 900;
+        padding: 6px 10px;
+        white-space: nowrap;
+      }
+
+      .progress {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        height: 8px;
+        overflow: hidden;
+      }
+
+      .progress span {
+        background: var(--gold);
+        display: block;
+        height: 100%;
+      }
+
       .toolbar {
         align-items: end;
         display: grid;
@@ -344,6 +418,16 @@
           flex-direction: column;
         }
 
+        .navigation,
+        .section-heading {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .navigation button {
+          text-align: left;
+        }
+
         .toolbar,
         .metrics,
         .grid {
@@ -367,7 +451,7 @@
     <main class="shell">
       <section id="loginView" class="login">
         <h1>Horoteca</h1>
-        <p>Entre com o mesmo login do app para visualizar a colecao no navegador.</p>
+        <p>Entre com seu e-mail e senha do Horoteca para acessar a coleção e a Fila de Cadastro.</p>
         <form id="loginForm">
           <div class="field">
             <label for="email">E-mail</label>
@@ -396,30 +480,57 @@
           </div>
         </header>
 
-        <section class="metrics">
-          <div class="metric"><strong id="metricCount">0</strong><span>Relogios</span></div>
-          <div class="metric"><strong id="metricCost">R$ 0,00</strong><span>Custo real</span></div>
-          <div class="metric"><strong id="metricValue">R$ 0,00</strong><span>Valor estimado</span></div>
-          <div class="metric"><strong id="metricResult">R$ 0,00</strong><span>Resultado potencial</span></div>
-        </section>
+        <nav class="navigation" aria-label="Áreas do Horoteca">
+          <button id="collectionTab" class="active" type="button" aria-current="page">Coleção</button>
+          <button id="intakeTab" type="button">Fila de Cadastro <span id="intakeBadge" class="badge">0</span></button>
+        </nav>
 
-        <section class="toolbar">
-          <div class="field">
-            <label for="search">Buscar</label>
-            <input id="search" placeholder="Marca, modelo, codigo ou pedido" type="search" />
-          </div>
-          <div class="field">
-            <label for="brandFilter">Marca</label>
-            <select id="brandFilter">
-              <option value="">Todas</option>
-            </select>
-          </div>
-          <button id="sortCostButton" class="secondary" type="button">Ordenar por custo</button>
-          <button id="sortCodeButton" class="secondary" type="button">Ordenar por codigo</button>
-        </section>
+        <div id="collectionView">
+          <section class="metrics">
+            <div class="metric"><strong id="metricCount">0</strong><span>Relógios</span></div>
+            <div class="metric"><strong id="metricCost">R$ 0,00</strong><span>Custo real</span></div>
+            <div class="metric"><strong id="metricValue">R$ 0,00</strong><span>Valor estimado</span></div>
+            <div class="metric"><strong id="metricResult">R$ 0,00</strong><span>Resultado potencial</span></div>
+          </section>
 
-        <p id="appStatus" class="status hidden"></p>
-        <section id="watchGrid" class="grid"></section>
+          <section class="toolbar">
+            <div class="field">
+              <label for="search">Buscar</label>
+              <input id="search" placeholder="Marca, modelo, código ou pedido" type="search" />
+            </div>
+            <div class="field">
+              <label for="brandFilter">Marca</label>
+              <select id="brandFilter">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <button id="sortCostButton" class="secondary" type="button">Ordenar por custo</button>
+            <button id="sortCodeButton" class="secondary" type="button">Ordenar por código</button>
+          </section>
+
+          <p id="appStatus" class="status hidden"></p>
+          <section id="watchGrid" class="grid"></section>
+        </div>
+
+        <div id="intakeView" class="hidden">
+          <header class="section-heading">
+            <div>
+              <h2>Fila de Cadastro</h2>
+              <p>Acompanhe os processos antes da inclusão definitiva na coleção.</p>
+            </div>
+            <span class="readonly-label">Somente leitura</span>
+          </header>
+
+          <section class="metrics">
+            <div class="metric"><strong id="intakeMetricCount">0</strong><span>Processos</span></div>
+            <div class="metric"><strong id="intakeMetricDraft">0</strong><span>Rascunhos</span></div>
+            <div class="metric"><strong id="intakeMetricReview">0</strong><span>Em revisão</span></div>
+            <div class="metric"><strong id="intakeMetricItems">0</strong><span>Peças identificadas</span></div>
+          </section>
+
+          <p id="intakeStatus" class="status hidden"></p>
+          <section id="intakeGrid" class="grid"></section>
+        </div>
       </section>
     </main>
 
@@ -438,6 +549,7 @@
         watches: [],
         histories: [],
         photos: [],
+        intakes: [],
         expenses: [],
         allocations: [],
         acquisitions: [],
@@ -455,6 +567,11 @@
         loginStatus: document.querySelector("#loginStatus"),
         refreshButton: document.querySelector("#refreshButton"),
         logoutButton: document.querySelector("#logoutButton"),
+        collectionTab: document.querySelector("#collectionTab"),
+        intakeTab: document.querySelector("#intakeTab"),
+        intakeBadge: document.querySelector("#intakeBadge"),
+        collectionView: document.querySelector("#collectionView"),
+        intakeView: document.querySelector("#intakeView"),
         search: document.querySelector("#search"),
         brandFilter: document.querySelector("#brandFilter"),
         sortCostButton: document.querySelector("#sortCostButton"),
@@ -465,11 +582,27 @@
         metricCost: document.querySelector("#metricCost"),
         metricValue: document.querySelector("#metricValue"),
         metricResult: document.querySelector("#metricResult"),
+        intakeStatus: document.querySelector("#intakeStatus"),
+        intakeGrid: document.querySelector("#intakeGrid"),
+        intakeMetricCount: document.querySelector("#intakeMetricCount"),
+        intakeMetricDraft: document.querySelector("#intakeMetricDraft"),
+        intakeMetricReview: document.querySelector("#intakeMetricReview"),
+        intakeMetricItems: document.querySelector("#intakeMetricItems"),
       };
 
       function show(view) {
         els.loginView.classList.toggle("hidden", view !== "login");
         els.appView.classList.toggle("hidden", view !== "app");
+      }
+
+      function showArea(area) {
+        const showCollection = area === "collection";
+        els.collectionView.classList.toggle("hidden", !showCollection);
+        els.intakeView.classList.toggle("hidden", showCollection);
+        els.collectionTab.classList.toggle("active", showCollection);
+        els.intakeTab.classList.toggle("active", !showCollection);
+        els.collectionTab.toggleAttribute("aria-current", showCollection);
+        els.intakeTab.toggleAttribute("aria-current", !showCollection);
       }
 
       function status(target, message, isError = false) {
@@ -509,7 +642,8 @@
 
       async function loadData() {
         status(els.appStatus, "Carregando colecao...");
-        const [watches, events, legacyHistory, photos, expenses, allocations, acquisitions, acquisitionItems, sources, claims] = await Promise.all([
+        status(els.intakeStatus, "Carregando fila...");
+        const [watches, events, legacyHistory, photos, expenses, allocations, acquisitions, acquisitionItems, sources, claims, intakes] = await Promise.all([
           request("/rest/v1/watches?select=*&order=horoteca_code.asc"),
           request("/rest/v1/watch_events?select=*&order=event_date.desc"),
           request("/rest/v1/maintenance_logs?select=*&order=event_date.desc"),
@@ -522,6 +656,7 @@
           request("/rest/v1/acquisition_items?select=*"),
           request("/rest/v1/watch_sources?select=*"),
           request("/rest/v1/watch_claims?select=*"),
+          request("/rest/v1/watch_intakes?select=id,intake_code,intake_number,title,status,current_stage,version,expected_item_count,identified_item_count,updated_at&order=intake_number.asc"),
         ]);
         state.expenses = expenses;
         state.allocations = allocations;
@@ -529,6 +664,7 @@
         state.acquisitionItems = acquisitionItems;
         state.sources = sources;
         state.claims = claims;
+        state.intakes = intakes;
         const watchesWithEvents = new Set(events.map((event) => event.watch_id));
         state.histories = [
           ...events,
@@ -538,7 +674,9 @@
         state.photos = photos;
         buildBrandFilter();
         render();
+        renderIntakes();
         status(els.appStatus, "");
+        status(els.intakeStatus, "");
       }
 
       function normalizeWatch(row) {
@@ -651,6 +789,79 @@
         els.metricCost.textContent = money.format(cost);
         els.metricValue.textContent = money.format(value);
         els.metricResult.textContent = money.format(value - cost);
+      }
+
+      function renderIntakes() {
+        const draftCount = state.intakes.filter((intake) => intake.status === "draft").length;
+        const reviewCount = state.intakes.filter((intake) =>
+          String(intake.current_stage || "").startsWith("review"),
+        ).length;
+        const itemCount = state.intakes.reduce(
+          (sum, intake) => sum + Number(intake.identified_item_count || 0),
+          0,
+        );
+
+        els.intakeBadge.textContent = state.intakes.length;
+        els.intakeMetricCount.textContent = state.intakes.length;
+        els.intakeMetricDraft.textContent = draftCount;
+        els.intakeMetricReview.textContent = reviewCount;
+        els.intakeMetricItems.textContent = itemCount;
+        els.intakeGrid.innerHTML = "";
+
+        if (!state.intakes.length) {
+          els.intakeGrid.innerHTML = '<div class="empty">Nenhum processo na fila.</div>';
+          return;
+        }
+
+        for (const intake of state.intakes) {
+          const identified = Number(intake.identified_item_count || 0);
+          const expected = Number(intake.expected_item_count || 0);
+          const progress = expected ? Math.min(100, Math.round((identified / expected) * 100)) : 0;
+          const article = document.createElement("article");
+          article.className = "card";
+          article.innerHTML = `
+            <div class="card-head">
+              <div class="thumb">${escapeHtml(intake.intake_code || "H")}</div>
+              <div class="title">
+                <div class="code">${escapeHtml(intake.intake_code || "Sem código")}</div>
+                <h2>${escapeHtml(intake.title || "Cadastro sem título")}</h2>
+                <p>${escapeHtml(intakeStatusLabel(intake.status))} • ${escapeHtml(intakeStageLabel(intake.current_stage))}</p>
+              </div>
+            </div>
+            <div class="card-body">
+              ${row("Situação", intakeStatusLabel(intake.status))}
+              ${row("Etapa atual", intakeStageLabel(intake.current_stage))}
+              ${row("Peças identificadas", `${identified} de ${expected}`)}
+              <div class="progress" aria-label="${progress}% das peças identificadas"><span style="width: ${progress}%"></span></div>
+              ${row("Versão", `V${Number(intake.version || 1)}`)}
+              ${row("Atualizado", formatDateTime(intake.updated_at))}
+            </div>
+          `;
+          els.intakeGrid.append(article);
+        }
+      }
+
+      function intakeStatusLabel(value) {
+        return ({
+          draft: "Rascunho",
+          in_review: "Em revisão",
+          approved: "Aprovado",
+          rejected: "Rejeitado",
+          completed: "Concluído",
+        })[value] || value || "Não informado";
+      }
+
+      function intakeStageLabel(value) {
+        const match = String(value || "").match(/^review_(\d+)$/);
+        if (match) return `Revisão ${match[1]}`;
+        return ({ draft: "Rascunho", completed: "Concluído" })[value] || value || "Não informada";
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "Não informado";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
       }
 
       function renderCard(watch) {
@@ -838,12 +1049,17 @@
       });
 
       els.refreshButton.addEventListener("click", loadData);
+      els.collectionTab.addEventListener("click", () => showArea("collection"));
+      els.intakeTab.addEventListener("click", () => showArea("intake"));
       els.logoutButton.addEventListener("click", () => {
         localStorage.removeItem("horotecaSession");
         state.session = null;
         state.watches = [];
         state.histories = [];
         state.claims = [];
+        state.intakes = [];
+        els.intakeBadge.textContent = "0";
+        showArea("collection");
         show("login");
       });
       els.search.addEventListener("input", render);
