@@ -1,9 +1,10 @@
-name: Validate Fila de Cadastro prototype
+name: Validate Fila de Cadastro migration
 
 on:
   pull_request:
     paths:
       - "supabase/fila_cadastro/**"
+      - "supabase/migrations/20260827094104_fila_cadastro.sql"
       - ".github/workflows/validate-fila-cadastro-prototype.yml"
   workflow_dispatch:
 
@@ -46,7 +47,7 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "## Fila de Cadastro prototype"
+            echo "## Fila de Cadastro migration"
             echo
             echo "- Supabase CLI: \`$(supabase --version)\`"
             echo "- Docker: \`$(docker --version)\`"
@@ -122,20 +123,19 @@ jobs:
             );
           SQL
 
-      - name: Apply prototype and import H001 idempotently
+      - name: Apply migration and import H001 idempotently
         shell: bash
         run: |
           set -euo pipefail
           database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
-            --file=supabase/fila_cadastro/foundation_prototype.sql
-          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
-            --file=supabase/fila_cadastro/operations_prototype.sql
+            --file=supabase/migrations/20260827094104_fila_cadastro.sql
           for attempt in 1 2; do
             psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
               --set=owner_user_id="$TEST_OWNER_USER_ID" \
               --file=supabase/fila_cadastro/import_h001_prototype.sql
           done
+          echo "- Migration: **applied once**" >> "$GITHUB_STEP_SUMMARY"
           echo "- H001 import: **executed twice for idempotency**" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Validate domain and security assertions

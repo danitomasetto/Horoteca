@@ -1,13 +1,16 @@
 # Fila de Cadastro — fundação executável
 
-Esta pasta inicia a Fila de Cadastro como **especificação executável e
-protótipo local**. Ela ainda não é uma migration e não deve ser aplicada ao
+Esta pasta preserva a **especificação executável e os testes locais** que deram
+origem à migration da Fila de Cadastro. A migration ainda não foi aplicada ao
 Supabase oficial.
 
 O objetivo desta etapa é validar o modelo, a segurança e a importação histórica
-de H001 em uma instância descartável antes de congelar uma migration.
+de H001 em uma instância descartável antes de qualquer aplicação remota.
 
 ## Arquivos
+
+- `../migrations/20260827094104_fila_cadastro.sql`: migration gerada pela
+  Supabase CLI a partir da fundação e das operações aprovadas.
 
 - `foundation_prototype.sql`: cria a fundação relacional, a máquina de estados,
   RLS, grants, trilhas append-only e proteções de identidade.
@@ -79,19 +82,20 @@ válidas e decisão explícita do proprietário.
 
 ## Validação local/CI
 
-O workflow `Validate Fila de Cadastro prototype`:
+O workflow `Validate Fila de Cadastro migration`:
 
 1. inicia uma stack Supabase descartável;
 2. aplica a baseline canônica uma vez;
 3. valida a baseline;
 4. cria dois usuários fictícios locais;
-5. aplica este protótipo e importa H001 duas vezes para provar idempotência;
+5. aplica a migration uma vez e importa H001 duas vezes para provar
+   idempotência;
 6. executa as assertions de segurança, domínio e operações transacionais;
 7. roda `supabase db lint --local --level error`;
 8. destrói todos os recursos locais, mesmo em caso de falha.
 
 Nenhum token, project ref ou credencial remota é usado.
 
-Quando este protótipo estiver aprovado e verde, a migration correspondente deve
-ser criada com a Supabase CLI, revisada novamente e testada em branch antes de
-qualquer aplicação oficial.
+A migration foi criada com a Supabase CLI e precisa permanecer verde nesta
+branch antes de qualquer aplicação oficial. A aplicação remota continua sendo
+uma etapa separada e depende de aprovação explícita.
