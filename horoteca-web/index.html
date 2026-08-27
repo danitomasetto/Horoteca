@@ -218,6 +218,68 @@
         height: 100%;
       }
 
+      .detail-view {
+        display: grid;
+        gap: 16px;
+      }
+
+      .detail-view .section-heading button {
+        margin-bottom: 14px;
+      }
+
+      .detail-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .detail-section {
+        background: rgba(24, 33, 49, 0.86);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .detail-section.full {
+        grid-column: 1 / -1;
+      }
+
+      .detail-section h3 {
+        color: var(--gold-soft);
+        margin: 0 0 14px;
+      }
+
+      .detail-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .detail-item {
+        background: rgba(16, 24, 39, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .detail-item strong {
+        color: var(--gold-soft);
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .detail-item .row + .row {
+        margin-top: 7px;
+      }
+
+      .text-link {
+        color: var(--gold-soft);
+        font-weight: 800;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
       .toolbar {
         align-items: end;
         display: grid;
@@ -430,8 +492,13 @@
 
         .toolbar,
         .metrics,
-        .grid {
+        .grid,
+        .detail-grid {
           grid-template-columns: 1fr;
+        }
+
+        .detail-section.full {
+          grid-column: auto;
         }
 
         .card-head {
@@ -513,23 +580,38 @@
         </div>
 
         <div id="intakeView" class="hidden">
-          <header class="section-heading">
-            <div>
-              <h2>Fila de Cadastro</h2>
-              <p>Acompanhe os processos antes da inclusão definitiva na coleção.</p>
-            </div>
-            <span class="readonly-label">Somente leitura</span>
-          </header>
+          <div id="intakeOverview">
+            <header class="section-heading">
+              <div>
+                <h2>Fila de Cadastro</h2>
+                <p>Acompanhe os processos antes da inclusão definitiva na coleção.</p>
+              </div>
+              <span class="readonly-label">Somente leitura</span>
+            </header>
 
-          <section class="metrics">
-            <div class="metric"><strong id="intakeMetricCount">0</strong><span>Processos</span></div>
-            <div class="metric"><strong id="intakeMetricDraft">0</strong><span>Rascunhos</span></div>
-            <div class="metric"><strong id="intakeMetricReview">0</strong><span>Em revisão</span></div>
-            <div class="metric"><strong id="intakeMetricItems">0</strong><span>Peças identificadas</span></div>
-          </section>
+            <section class="metrics">
+              <div class="metric"><strong id="intakeMetricCount">0</strong><span>Processos</span></div>
+              <div class="metric"><strong id="intakeMetricDraft">0</strong><span>Rascunhos</span></div>
+              <div class="metric"><strong id="intakeMetricReview">0</strong><span>Em revisão</span></div>
+              <div class="metric"><strong id="intakeMetricItems">0</strong><span>Peças identificadas</span></div>
+            </section>
 
-          <p id="intakeStatus" class="status hidden"></p>
-          <section id="intakeGrid" class="grid"></section>
+            <p id="intakeStatus" class="status hidden"></p>
+            <section id="intakeGrid" class="grid"></section>
+          </div>
+
+          <div id="intakeDetailView" class="detail-view hidden">
+            <header class="section-heading">
+              <div>
+                <button id="backToIntakesButton" class="secondary" type="button">← Voltar para a fila</button>
+                <h2 id="intakeDetailTitle">Detalhes do processo</h2>
+                <p id="intakeDetailSubtitle"></p>
+              </div>
+              <span class="readonly-label">Somente leitura</span>
+            </header>
+            <p id="intakeDetailStatus" class="status hidden"></p>
+            <section id="intakeDetailContent" class="detail-grid"></section>
+          </div>
         </div>
       </section>
     </main>
@@ -550,6 +632,8 @@
         histories: [],
         photos: [],
         intakes: [],
+        selectedIntake: null,
+        intakeDetails: null,
         expenses: [],
         allocations: [],
         acquisitions: [],
@@ -572,6 +656,13 @@
         intakeBadge: document.querySelector("#intakeBadge"),
         collectionView: document.querySelector("#collectionView"),
         intakeView: document.querySelector("#intakeView"),
+        intakeOverview: document.querySelector("#intakeOverview"),
+        intakeDetailView: document.querySelector("#intakeDetailView"),
+        backToIntakesButton: document.querySelector("#backToIntakesButton"),
+        intakeDetailTitle: document.querySelector("#intakeDetailTitle"),
+        intakeDetailSubtitle: document.querySelector("#intakeDetailSubtitle"),
+        intakeDetailStatus: document.querySelector("#intakeDetailStatus"),
+        intakeDetailContent: document.querySelector("#intakeDetailContent"),
         search: document.querySelector("#search"),
         brandFilter: document.querySelector("#brandFilter"),
         sortCostButton: document.querySelector("#sortCostButton"),
@@ -603,6 +694,16 @@
         els.intakeTab.classList.toggle("active", !showCollection);
         els.collectionTab.toggleAttribute("aria-current", showCollection);
         els.intakeTab.toggleAttribute("aria-current", !showCollection);
+        if (!showCollection) showIntakeOverview();
+      }
+
+      function showIntakeOverview() {
+        els.intakeOverview.classList.remove("hidden");
+        els.intakeDetailView.classList.add("hidden");
+        els.intakeDetailContent.innerHTML = "";
+        status(els.intakeDetailStatus, "");
+        state.selectedIntake = null;
+        state.intakeDetails = null;
       }
 
       function status(target, message, isError = false) {
@@ -656,7 +757,7 @@
           request("/rest/v1/acquisition_items?select=*"),
           request("/rest/v1/watch_sources?select=*"),
           request("/rest/v1/watch_claims?select=*"),
-          request("/rest/v1/watch_intakes?select=id,intake_code,intake_number,title,status,current_stage,version,expected_item_count,identified_item_count,updated_at&order=intake_number.asc"),
+          request("/rest/v1/watch_intakes?select=id,intake_code,intake_number,title,notes,status,current_stage,version,expected_item_count,identified_item_count,updated_at&order=intake_number.asc"),
         ]);
         state.expenses = expenses;
         state.allocations = allocations;
@@ -835,19 +936,210 @@
               <div class="progress" aria-label="${progress}% das peças identificadas"><span style="width: ${progress}%"></span></div>
               ${row("Versão", `V${Number(intake.version || 1)}`)}
               ${row("Atualizado", formatDateTime(intake.updated_at))}
+              <button class="secondary intake-details-button" data-intake-id="${intake.id}" type="button">Ver detalhes</button>
             </div>
           `;
           els.intakeGrid.append(article);
         }
+
+        for (const button of els.intakeGrid.querySelectorAll(".intake-details-button")) {
+          button.addEventListener("click", () => openIntakeDetail(Number(button.dataset.intakeId)));
+        }
+      }
+
+      async function openIntakeDetail(intakeId) {
+        const intake = state.intakes.find((item) => item.id === intakeId);
+        if (!intake) return;
+
+        state.selectedIntake = intake;
+        els.intakeOverview.classList.add("hidden");
+        els.intakeDetailView.classList.remove("hidden");
+        els.intakeDetailTitle.textContent = `${intake.intake_code} — ${intake.title || "Cadastro sem título"}`;
+        els.intakeDetailSubtitle.textContent = `${intakeStatusLabel(intake.status)} • ${intakeStageLabel(intake.current_stage)} • V${intake.version}`;
+        els.intakeDetailContent.innerHTML = "";
+        status(els.intakeDetailStatus, "Carregando detalhes protegidos...");
+
+        const filter = `intake_id=eq.${encodeURIComponent(intakeId)}`;
+        try {
+          const [documents, acquisitions, items, expenses, sources, claims, photos, transitions] = await Promise.all([
+            request(`/rest/v1/watch_intake_documents?select=id,document_role,display_name,original_name,url,status,document_version,is_accessible,provider_modified_at,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_acquisitions?select=id,marketplace,seller_name,order_number,purchase_date,purchase_payment_date,taxes_payment_date,shipped_date,estimated_delivery_date,received_date,payment_method,carrier,tracking_number,match_status,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_items?select=id,item_sequence,visual_position,order_number,order_item_number,marketplace_item_id,candidate_horoteca_code,candidate_brand,candidate_model,candidate_reference_number,candidate_movement_type,candidate_serial_number,candidate_case_code,candidate_dial_code,candidate_watch_data,brand_match_status,model_match_status,caliber_match_status&${filter}&order=item_sequence.asc`),
+            request(`/rest/v1/watch_intake_expenses?select=id,item_id,category,description,expense_date,currency,amount_original,exchange_rate,amount_brl,is_shared,allocation_method,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_sources?select=id,item_id,source_type,title,url,evidence_classification,confidence_percent,excerpt,accessed_at,notes&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_claims?select=id,item_id,field_name,asserted_value,asserted_by_type,evidence_classification,verification_status,confidence_percent,context&${filter}&order=id.asc`),
+            request(`/rest/v1/watch_intake_photos?select=id,original_url,storage_path,origin_type,visual_position,evidence_classification,display_order,copy_status,notes&${filter}&order=display_order.asc`),
+            request(`/rest/v1/watch_intake_transitions?select=id,from_status,to_status,intake_version,actor_type,reason,created_at&${filter}&order=created_at.asc`),
+          ]);
+          state.intakeDetails = { documents, acquisitions, items, expenses, sources, claims, photos, transitions };
+          renderIntakeDetail();
+          status(els.intakeDetailStatus, "");
+        } catch (error) {
+          status(els.intakeDetailStatus, `Não foi possível carregar os detalhes: ${error.message}`, true);
+        }
+      }
+
+      function renderIntakeDetail() {
+        const intake = state.selectedIntake;
+        const details = state.intakeDetails;
+        if (!intake || !details) return;
+
+        const general = `
+          ${row("Código", escapeHtml(intake.intake_code))}
+          ${row("Situação", escapeHtml(intakeStatusLabel(intake.status)))}
+          ${row("Etapa", escapeHtml(intakeStageLabel(intake.current_stage)))}
+          ${row("Peças", `${Number(intake.identified_item_count || 0)} de ${Number(intake.expected_item_count || 0)}`)}
+          ${row("Versão", `V${Number(intake.version || 1)}`)}
+          ${row("Atualizado", escapeHtml(formatDateTime(intake.updated_at)))}
+          ${intake.notes ? row("Observação", escapeHtml(intake.notes)) : ""}
+        `;
+
+        const documents = details.documents.length
+          ? details.documents.map((document) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(document.display_name || document.original_name)}</strong>
+                ${row("Tipo", escapeHtml(documentRoleLabel(document.document_role)))}
+                ${row("Versão", `V${Number(document.document_version || 1)}`)}
+                ${row("Acessível", yesNoUnknown(document.is_accessible))}
+                ${document.notes ? row("Observação", escapeHtml(document.notes)) : ""}
+                ${safeExternalLink(document.url, "Abrir documento original")}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhum documento registrado.");
+
+        const items = details.items.length
+          ? details.items.map((item) => {
+              const claimedReference = item.candidate_watch_data?.reference_claim;
+              const claimedCaliber = item.candidate_watch_data?.caliber_claim;
+              return `
+                <div class="detail-item">
+                  <strong>Peça ${Number(item.item_sequence)} — ${escapeHtml(item.candidate_brand || "Marca pendente")} ${escapeHtml(item.candidate_model || "")}</strong>
+                  ${row("Código candidato", escapeHtml(item.candidate_horoteca_code || "Não informado"))}
+                  ${row("Pedido", escapeHtml(item.order_number || "Não informado"))}
+                  ${row("Item do anúncio", escapeHtml(item.marketplace_item_id || "Não informado"))}
+                  ${row("Referência confirmada", escapeHtml(item.candidate_reference_number || "Ainda não confirmada"))}
+                  ${claimedReference ? row("Referência alegada", `${escapeHtml(claimedReference)} <span class="muted">(pendente)</span>`) : ""}
+                  ${row("Calibre confirmado", escapeHtml(item.candidate_movement_type || "Ainda não confirmado"))}
+                  ${claimedCaliber ? row("Calibre alegado", `${escapeHtml(claimedCaliber)} <span class="muted">(pendente)</span>`) : ""}
+                  ${row("Série", escapeHtml(item.candidate_serial_number || "Não informada"))}
+                </div>
+              `;
+            }).join("")
+          : detailEmpty("Nenhuma peça identificada.");
+
+        const acquisitions = details.acquisitions.length
+          ? details.acquisitions.map((acquisition) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(acquisition.order_number || "Aquisição sem pedido")}</strong>
+                ${row("Marketplace", escapeHtml(acquisition.marketplace || "Não informado"))}
+                ${row("Vendedor", escapeHtml(acquisition.seller_name || "Não informado"))}
+                ${row("Compra", escapeHtml(parseDate(acquisition.purchase_date) || "Não informada"))}
+                ${row("Rastreamento", escapeHtml(acquisition.tracking_number || "Não informado"))}
+                ${row("Correspondência", escapeHtml(matchStatusLabel(acquisition.match_status)))}
+              </div>
+            `).join("")
+          : detailEmpty("A aquisição ainda não foi estruturada nesta versão.");
+
+        const expenses = details.expenses.length
+          ? details.expenses.map((expense) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(expense.description || expense.category)}</strong>
+                ${row("Categoria", escapeHtml(expense.category))}
+                ${row("Valor original", escapeHtml(originalExpenseMoney(expense)))}
+                ${row("Valor em reais", expense.amount_brl == null ? "Não informado" : money.format(expense.amount_brl))}
+                ${row("Compartilhada", expense.is_shared ? "Sim" : "Não")}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhuma despesa estruturada nesta versão.");
+
+        const evidence = [...details.sources.map(renderIntakeSource), ...details.claims.map(renderIntakeClaim)].join("")
+          || detailEmpty("Não há fontes ou alegações estruturadas nesta versão.");
+
+        const photos = details.photos.length
+          ? details.photos.map((photo) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(photo.visual_position || photo.origin_type || "Foto")}</strong>
+                ${row("Evidência", escapeHtml(evidenceLabel(photo.evidence_classification)))}
+                ${row("Cópia", escapeHtml(photo.copy_status || "Não informada"))}
+                ${safeExternalLink(photo.original_url, "Abrir foto original")}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhuma foto vinculada ao processo.");
+
+        const transitions = details.transitions.length
+          ? details.transitions.map((transition) => `
+              <div class="detail-item">
+                <strong>${escapeHtml(formatDateTime(transition.created_at))} — ${escapeHtml(intakeStatusLabel(transition.to_status))}</strong>
+                ${row("Origem", escapeHtml(transition.from_status ? intakeStatusLabel(transition.from_status) : "Início do histórico"))}
+                ${row("Responsável", escapeHtml(actorTypeLabel(transition.actor_type)))}
+                ${transition.reason ? row("Motivo", escapeHtml(transition.reason)) : ""}
+              </div>
+            `).join("")
+          : detailEmpty("Nenhuma movimentação registrada.");
+
+        els.intakeDetailContent.innerHTML = [
+          detailSection("Resumo do processo", general, true),
+          detailSection(`Documentos (${details.documents.length})`, documents),
+          detailSection(`Peças (${details.items.length})`, items),
+          detailSection(`Aquisições (${details.acquisitions.length})`, acquisitions),
+          detailSection(`Custos (${details.expenses.length})`, expenses),
+          detailSection(`Fontes e alegações (${details.sources.length + details.claims.length})`, evidence),
+          detailSection(`Fotos (${details.photos.length})`, photos),
+          detailSection(`Histórico (${details.transitions.length})`, transitions, true),
+        ].join("");
+      }
+
+      function detailSection(title, content, full = false) {
+        return `<section class="detail-section${full ? " full" : ""}"><h3>${escapeHtml(title)}</h3><div class="detail-list">${content}</div></section>`;
+      }
+
+      function detailEmpty(message) {
+        return `<div class="detail-item muted">${escapeHtml(message)}</div>`;
+      }
+
+      function safeExternalLink(url, label) {
+        if (!url) return "";
+        try {
+          const parsed = new URL(url);
+          if (parsed.protocol !== "https:") return "";
+          return `<a class="text-link" href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)} ↗</a>`;
+        } catch {
+          return "";
+        }
+      }
+
+      function renderIntakeSource(source) {
+        return `<div class="detail-item"><strong>${escapeHtml(source.title || source.source_type)}</strong>${row("Evidência", escapeHtml(evidenceLabel(source.evidence_classification)))}${source.confidence_percent == null ? "" : row("Confiança", `${Number(source.confidence_percent)}%`)}${safeExternalLink(source.url, "Abrir fonte")}</div>`;
+      }
+
+      function renderIntakeClaim(claim) {
+        return `<div class="detail-item"><strong>${escapeHtml(claim.field_name)}</strong>${row("Valor alegado", escapeHtml(claim.asserted_value))}${row("Evidência", escapeHtml(evidenceLabel(claim.evidence_classification)))}${row("Verificação", escapeHtml(claimStatusLabel(claim.verification_status)))}</div>`;
       }
 
       function intakeStatusLabel(value) {
         return ({
+          new: "Novo",
           draft: "Rascunho",
-          in_review: "Em revisão",
-          approved: "Aprovado",
-          rejected: "Rejeitado",
+          submitted_for_review_01: "Enviado para revisão 01",
+          review_01_in_progress: "Revisão 01 em andamento",
+          review_01_corrections_requested: "Correções da revisão 01",
+          review_01_approved: "Revisão 01 aprovada",
+          submitted_for_review_02: "Enviado para revisão 02",
+          review_02_in_progress: "Revisão 02 em andamento",
+          review_02_corrections_requested: "Correções da revisão 02",
+          review_02_approved: "Revisão 02 aprovada",
+          submitted_for_review_03: "Enviado para revisão 03",
+          review_03_in_progress: "Revisão 03 em andamento",
+          review_03_corrections_requested: "Correções da revisão 03",
+          review_03_approved: "Revisão 03 aprovada",
+          awaiting_owner_approval: "Aguardando sua aprovação",
+          owner_corrections_requested: "Correções solicitadas pelo proprietário",
+          owner_approved: "Aprovado pelo proprietário",
+          finalization_ready: "Pronto para finalizar",
+          finalizing: "Finalizando",
+          finalization_failed: "Falha na finalização",
           completed: "Concluído",
+          cancelled: "Cancelado",
         })[value] || value || "Não informado";
       }
 
@@ -862,6 +1154,51 @@
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;
         return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      }
+
+      function documentRoleLabel(value) {
+        return ({
+          source_a: "Documento A — fonte original",
+          working_b: "Documento B — trabalho",
+          approved_b: "Documento B — aprovado",
+          support: "Documento de apoio",
+        })[value] || value || "Não informado";
+      }
+
+      function matchStatusLabel(value) {
+        return ({
+          unreviewed: "Não revisada",
+          exact_match: "Correspondência exata",
+          explicit_new: "Novo cadastro explícito",
+          ambiguous: "Ambígua",
+          not_applicable: "Não aplicável",
+        })[value] || value || "Não informado";
+      }
+
+      function claimStatusLabel(value) {
+        return ({
+          pending: "Pendente",
+          accepted: "Aceita",
+          rejected: "Rejeitada",
+          superseded: "Substituída",
+        })[value] || value || "Não informado";
+      }
+
+      function actorTypeLabel(value) {
+        return ({
+          owner: "Proprietário",
+          user: "Usuário",
+          server_agent: "Agente do sistema",
+          system: "Sistema",
+          historical_import: "Importação histórica",
+        })[value] || value || "Não informado";
+      }
+
+      function originalExpenseMoney(expense) {
+        if (expense.currency && expense.amount_original != null) {
+          return `${expense.currency} ${Number(expense.amount_original).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+        }
+        return "Não informado";
       }
 
       function renderCard(watch) {
@@ -1051,6 +1388,7 @@
       els.refreshButton.addEventListener("click", loadData);
       els.collectionTab.addEventListener("click", () => showArea("collection"));
       els.intakeTab.addEventListener("click", () => showArea("intake"));
+      els.backToIntakesButton.addEventListener("click", showIntakeOverview);
       els.logoutButton.addEventListener("click", () => {
         localStorage.removeItem("horotecaSession");
         state.session = null;
@@ -1058,6 +1396,8 @@
         state.histories = [];
         state.claims = [];
         state.intakes = [];
+        state.selectedIntake = null;
+        state.intakeDetails = null;
         els.intakeBadge.textContent = "0";
         showArea("collection");
         show("login");
