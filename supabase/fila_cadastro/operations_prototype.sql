@@ -1528,6 +1528,7 @@ $$;
 
 -- As RPCs públicas executam com um papel interno de privilégio mínimo. Esse
 -- papel não ignora RLS, não faz login e não possui CREATE após a instalação.
+grant horoteca_intake_executor to postgres;
 grant create on schema public to horoteca_intake_executor;
 alter function public.transition_watch_intake(bigint, integer, text, text)
   owner to horoteca_intake_executor;
@@ -1544,6 +1545,7 @@ alter function public.decide_watch_intake(bigint, integer, text, bigint, jsonb, 
 alter function public.finalize_watch_intake(bigint, integer, uuid)
   owner to horoteca_intake_executor;
 revoke create on schema public from horoteca_intake_executor;
+revoke horoteca_intake_executor from postgres;
 
 revoke all on function public.transition_watch_intake(bigint, integer, text, text)
   from public, anon;
