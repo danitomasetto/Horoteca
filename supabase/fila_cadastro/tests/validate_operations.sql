@@ -274,11 +274,12 @@ select pg_temp.assert_true(
 -- Simula reparo interno de uma falha operacional sem alterar a versão já
 -- aprovada; em produção, apenas uma operação protegida poderá fazer isto.
 reset role;
-select set_config('horoteca.internal_operation', '1', true);
+insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current());
 update public.watch_intake_claims
 set item_id = :'item_1_id'
 where id = :'rollback_claim_id';
-select set_config('horoteca.internal_operation', '0', true);
+delete from horoteca_private.operation_context
+where backend_pid = pg_backend_pid() and transaction_id = txid_current();
 set local role authenticated;
 select set_config('request.jwt.claim.sub', :'owner_user_id', true);
 

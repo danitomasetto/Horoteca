@@ -45,6 +45,16 @@ to horoteca_intake_executor;
 grant select on public.horoteca_user_roles to horoteca_intake_executor;
 grant select on horoteca_private.allowed_intake_transitions to horoteca_intake_executor;
 
+create table horoteca_private.operation_context (
+  backend_pid integer not null,
+  transaction_id bigint not null,
+  primary key (backend_pid, transaction_id)
+);
+
+revoke all on horoteca_private.operation_context from public, anon, authenticated;
+grant select, insert, delete on horoteca_private.operation_context
+to horoteca_intake_executor;
+
 grant usage, select on
   public.watch_intake_number_seq,
   public.watch_intakes_id_seq,
@@ -265,8 +275,12 @@ declare
   caller_id uuid := (select auth.uid());
   intake_record public.watch_intakes%rowtype;
 begin
-  if caller_id is null
-     or current_setting('horoteca.internal_operation', true) = '1' then
+  if caller_id is null or exists (
+    select 1
+    from horoteca_private.operation_context context
+    where context.backend_pid = pg_backend_pid()
+      and context.transaction_id = txid_current()
+  ) then
     return coalesce(new, old);
   end if;
 
@@ -376,12 +390,13 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-set horoteca.internal_operation = '1'
 as $$
 declare
   intake_record public.watch_intakes%rowtype;
   caller_id uuid := (select auth.uid());
 begin
+  insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
+  on conflict do nothing;
   select * into intake_record
   from public.watch_intakes
   where id = p_intake_id
@@ -433,6 +448,8 @@ begin
     p_reason
   );
 
+  delete from horoteca_private.operation_context
+  where backend_pid = pg_backend_pid() and transaction_id = txid_current();
   return jsonb_build_object(
     'intake_id', intake_record.id,
     'from_status', intake_record.status,
@@ -456,7 +473,6 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-set horoteca.internal_operation = '1'
 as $$
 declare
   intake_record public.watch_intakes%rowtype;
@@ -466,6 +482,8 @@ declare
   revision_id bigint;
   caller_id uuid := (select auth.uid());
 begin
+  insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
+  on conflict do nothing;
   if p_revision_type not between 1 and 3 then
     raise exception 'Tipo de revisão inválido' using errcode = '22023';
   end if;
@@ -537,6 +555,8 @@ begin
     jsonb_build_object('revision_id', revision_id, 'revision_type', p_revision_type, 'pass_number', next_pass)
   );
 
+  delete from horoteca_private.operation_context
+  where backend_pid = pg_backend_pid() and transaction_id = txid_current();
   return jsonb_build_object('revision_id', revision_id, 'pass_number', next_pass,
     'status', progress_status, 'version', intake_record.version);
 end;
@@ -554,7 +574,6 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-set horoteca.internal_operation = '1'
 as $$
 declare
   revision_record public.watch_intake_revisions%rowtype;
@@ -562,6 +581,8 @@ declare
   target_status text;
   caller_id uuid := (select auth.uid());
 begin
+  insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
+  on conflict do nothing;
   if p_decision not in ('approved', 'corrections_requested') then
     raise exception 'Decisão técnica inválida' using errcode = '22023';
   end if;
@@ -616,6 +637,8 @@ begin
     jsonb_build_object('revision_id', revision_record.id, 'decision', p_decision)
   );
 
+  delete from horoteca_private.operation_context
+  where backend_pid = pg_backend_pid() and transaction_id = txid_current();
   return jsonb_build_object('revision_id', revision_record.id, 'status', target_status,
     'version', intake_record.version, 'snapshot_hash', md5(p_snapshot::text));
 end;
@@ -630,7 +653,6 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-set horoteca.internal_operation = '1'
 as $$
 declare
   intake_record public.watch_intakes%rowtype;
@@ -643,6 +665,8 @@ declare
   old_status text;
   caller_id uuid := (select auth.uid());
 begin
+  insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
+  on conflict do nothing;
   select * into intake_record from public.watch_intakes
   where id = p_intake_id for update;
   if not found then raise exception 'Processo não encontrado' using errcode = 'P0002'; end if;
@@ -785,6 +809,8 @@ begin
     );
   end if;
 
+  delete from horoteca_private.operation_context
+  where backend_pid = pg_backend_pid() and transaction_id = txid_current();
   return jsonb_build_object(
     'expense_id', expense_record.id,
     'version', intake_record.version + 1,
@@ -808,7 +834,6 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-set horoteca.internal_operation = '1'
 as $$
 declare
   intake_record public.watch_intakes%rowtype;
@@ -816,6 +841,8 @@ declare
   decision_id bigint;
   caller_id uuid := (select auth.uid());
 begin
+  insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
+  on conflict do nothing;
   if p_action not in ('approve', 'request_correction', 'cancel') then
     raise exception 'Ação do proprietário inválida' using errcode = '22023';
   end if;
@@ -913,6 +940,8 @@ begin
     jsonb_build_object('decision_id', decision_id, 'action', p_action)
   );
 
+  delete from horoteca_private.operation_context
+  where backend_pid = pg_backend_pid() and transaction_id = txid_current();
   return jsonb_build_object('decision_id', decision_id, 'status', target_status,
     'version', intake_record.version, 'snapshot_hash', md5(p_snapshot::text));
 end;
@@ -927,7 +956,6 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-set horoteca.internal_operation = '1'
 as $$
 declare
   intake_record public.watch_intakes%rowtype;
@@ -957,6 +985,8 @@ begin
   if p_idempotency_key is null then
     raise exception 'Chave de idempotência é obrigatória' using errcode = '23502';
   end if;
+  insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
+  on conflict do nothing;
   select * into existing_finalization
   from public.watch_intake_finalizations
   where idempotency_key = p_idempotency_key;
@@ -965,6 +995,8 @@ begin
       using errcode = '23505';
   end if;
   if found and existing_finalization.status = 'completed' then
+    delete from horoteca_private.operation_context
+    where backend_pid = pg_backend_pid() and transaction_id = txid_current();
     return existing_finalization.result;
   end if;
 
@@ -978,6 +1010,8 @@ begin
   from public.watch_intake_finalizations
   where idempotency_key = p_idempotency_key;
   if found and existing_finalization.status = 'completed' then
+    delete from horoteca_private.operation_context
+    where backend_pid = pg_backend_pid() and transaction_id = txid_current();
     return existing_finalization.result;
   end if;
   if intake_record.version <> p_expected_version then
@@ -1455,6 +1489,8 @@ begin
       intake_record.version, caller_id, 'owner', 'Finalização transacional concluída',
       result_payload
     );
+    delete from horoteca_private.operation_context
+    where backend_pid = pg_backend_pid() and transaction_id = txid_current();
     return result_payload;
   exception
     when others then
@@ -1478,6 +1514,8 @@ begin
     intake_record.version, caller_id, 'owner', 'Finalização revertida integralmente',
     jsonb_build_object('finalization_id', finalization_id, 'error_code', failure_state)
   );
+  delete from horoteca_private.operation_context
+  where backend_pid = pg_backend_pid() and transaction_id = txid_current();
   return jsonb_build_object(
     'intake_id', intake_record.id,
     'finalization_id', finalization_id,
