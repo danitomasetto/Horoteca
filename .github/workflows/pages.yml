@@ -9,32 +9,35 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: horoteca-web-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Publish Horoteca Web to gh-pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp horoteca-web/index.html "$RUNNER_TEMP/horoteca-index.html"
+          git fetch origin gh-pages
+          git switch -C gh-pages origin/gh-pages
+          cp "$RUNNER_TEMP/horoteca-index.html" index.html
+          git add index.html
 
-      - name: Upload Horoteca Web
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: horoteca-web
+          if git diff --cached --quiet; then
+            echo "Horoteca Web is already up to date."
+            exit 0
+          fi
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Deploy Horoteca Web"
+          git push origin gh-pages
