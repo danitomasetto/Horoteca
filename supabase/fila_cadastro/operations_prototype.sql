@@ -12,8 +12,7 @@ begin
 end;
 $$;
 
-grant usage on schema public, auth, horoteca_private to horoteca_intake_executor;
-grant execute on function auth.uid() to horoteca_intake_executor;
+grant usage on schema public, horoteca_private to horoteca_intake_executor;
 
 grant select, insert, update, delete on
   public.watch_intakes,
@@ -56,6 +55,27 @@ revoke all on horoteca_private.operation_context from public, anon, authenticate
 grant select, insert, delete on horoteca_private.operation_context
 to horoteca_intake_executor;
 
+create function horoteca_private.current_user_id()
+returns uuid
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  legacy_sub text := nullif(current_setting('request.jwt.claim.sub', true), '');
+  claims_text text := nullif(current_setting('request.jwt.claims', true), '');
+begin
+  if legacy_sub is not null then
+    return legacy_sub::uuid;
+  end if;
+  if claims_text is not null then
+    return nullif(claims_text::jsonb ->> 'sub', '')::uuid;
+  end if;
+  return null;
+end;
+$$;
+
 grant usage, select on
   public.watch_intake_number_seq,
   public.watch_intakes_id_seq,
@@ -85,7 +105,7 @@ grant usage, select on
   public.watch_photo_links_id_seq
 to horoteca_intake_executor;
 
--- O executor não possui BYPASSRLS. Políticas dedicadas mantêm auth.uid() como
+-- O executor não possui BYPASSRLS. Políticas dedicadas mantêm o sub autenticado como
 -- fronteira de propriedade mesmo dentro das RPCs SECURITY DEFINER.
 do $policies$
 declare
@@ -121,7 +141,7 @@ begin
   ]
   loop
     execute format(
-      'create policy intake_executor_select on public.%I for select to horoteca_intake_executor using ((select auth.uid()) = user_id)',
+      'create policy intake_executor_select on public.%I for select to horoteca_intake_executor using ((select horoteca_private.current_user_id()) = user_id)',
       target_table
     );
   end loop;
@@ -155,15 +175,15 @@ begin
   ]
   loop
     execute format(
-      'create policy intake_executor_insert on public.%I for insert to horoteca_intake_executor with check ((select auth.uid()) = user_id)',
+      'create policy intake_executor_insert on public.%I for insert to horoteca_intake_executor with check ((select horoteca_private.current_user_id()) = user_id)',
       target_table
     );
     execute format(
-      'create policy intake_executor_update on public.%I for update to horoteca_intake_executor using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)',
+      'create policy intake_executor_update on public.%I for update to horoteca_intake_executor using ((select horoteca_private.current_user_id()) = user_id) with check ((select horoteca_private.current_user_id()) = user_id)',
       target_table
     );
     execute format(
-      'create policy intake_executor_delete on public.%I for delete to horoteca_intake_executor using ((select auth.uid()) = user_id)',
+      'create policy intake_executor_delete on public.%I for delete to horoteca_intake_executor using ((select horoteca_private.current_user_id()) = user_id)',
       target_table
     );
   end loop;
@@ -180,7 +200,7 @@ security invoker
 set search_path = ''
 as $$
 declare
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   if caller_id is null then
     raise exception 'Sessão autenticada obrigatória' using errcode = '28000';
@@ -273,7 +293,7 @@ set search_path = ''
 as $$
 declare
   affected_intake_id bigint := coalesce(new.intake_id, old.intake_id);
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
   intake_record public.watch_intakes%rowtype;
 begin
   if caller_id is null or exists (
@@ -394,7 +414,7 @@ set search_path = ''
 as $$
 declare
   intake_record public.watch_intakes%rowtype;
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
   on conflict do nothing;
@@ -445,7 +465,10 @@ begin
   ) values (
     intake_record.user_id, intake_record.id, intake_record.status, p_to_status,
     intake_record.version, caller_id,
-    case when public.is_horoteca_owner() then 'owner' else 'user' end,
+    case when exists (
+      select 1 from public.horoteca_user_roles role_assignment
+      where role_assignment.user_id = caller_id and role_assignment.role = 'owner'
+    ) then 'owner' else 'user' end,
     p_reason
   );
 
@@ -481,7 +504,7 @@ declare
   progress_status text := format('review_%s_in_progress', lpad(p_revision_type::text, 2, '0'));
   next_pass integer;
   revision_id bigint;
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
   on conflict do nothing;
@@ -580,7 +603,7 @@ declare
   revision_record public.watch_intake_revisions%rowtype;
   intake_record public.watch_intakes%rowtype;
   target_status text;
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
   on conflict do nothing;
@@ -664,7 +687,7 @@ declare
   rounded_total numeric;
   reconciliation_id bigint;
   old_status text;
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
   on conflict do nothing;
@@ -840,7 +863,7 @@ declare
   intake_record public.watch_intakes%rowtype;
   target_status text;
   decision_id bigint;
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   insert into horoteca_private.operation_context values (pg_backend_pid(), txid_current())
   on conflict do nothing;
@@ -981,7 +1004,7 @@ declare
   failure_state text;
   failure_message text;
   finalization_from_status text;
-  caller_id uuid := (select auth.uid());
+  caller_id uuid := horoteca_private.current_user_id();
 begin
   if p_idempotency_key is null then
     raise exception 'Chave de idempotência é obrigatória' using errcode = '23502';
@@ -1577,9 +1600,9 @@ grant execute on function public.decide_watch_intake(bigint, integer, text, bigi
 grant execute on function public.finalize_watch_intake(bigint, integer, uuid)
   to authenticated;
 
-grant execute on function public.is_horoteca_owner() to horoteca_intake_executor;
 revoke all on all functions in schema horoteca_private from public, anon, authenticated;
-grant execute on function horoteca_private.require_authenticated_owner(uuid),
+grant execute on function horoteca_private.current_user_id(),
+  horoteca_private.require_authenticated_owner(uuid),
   horoteca_private.require_horoteca_owner(uuid),
   horoteca_private.stage_for_status(text)
 to horoteca_intake_executor;
