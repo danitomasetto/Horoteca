@@ -53,6 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           flutter create --platforms ios --org br.com.tomasetto --project-name horoteca .
+          rm -f test/widget_test.dart
           /usr/bin/python3 - <<'PY'
           from pathlib import Path
 
