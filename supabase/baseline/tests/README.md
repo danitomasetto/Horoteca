@@ -15,6 +15,15 @@ esperada e a reconstruída são renderizadas pelo mesmo parser PostgreSQL local,
 eliminando diferenças cosméticas de parênteses entre versões sem ignorar ou
 reescrever a semântica do `CHECK`.
 
+Os 60 índices reais são validados sem as duplicações que foreign keys podem
+produzir ao apontar `conindid` para índices da tabela referenciada. O vínculo
+com uma constraint exige também a mesma tabela e apenas tipos PK, `UNIQUE` ou
+exclusion. Para comparar definições, o teste recria cada índice sobre uma tabela
+`LIKE` exclusivamente em `pg_temp` e extrai, com o PostgreSQL local, método de
+acesso, posições e expressões, predicado, opclasses, collations, opções e
+unicidade. Isso preserva a validação sem depender da renderização textual
+integral de `pg_get_indexdef` entre versões.
+
 O projeto remoto verificado registra `storage.buckets.versioning_status` como
 `disabled`, mas essa coluna ainda não existe na stack local estável usada pela
 CI. A baseline detecta a coluna pelo catálogo: quando disponível, grava e exige
