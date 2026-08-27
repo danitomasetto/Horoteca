@@ -129,6 +129,8 @@ jobs:
           database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
             --file=supabase/fila_cadastro/foundation_prototype.sql
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --file=supabase/fila_cadastro/operations_prototype.sql
           for attempt in 1 2; do
             psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
               --set=owner_user_id="$TEST_OWNER_USER_ID" \
@@ -145,7 +147,11 @@ jobs:
             --set=owner_user_id="$TEST_OWNER_USER_ID" \
             --set=other_user_id="$TEST_OTHER_USER_ID" \
             --file=supabase/fila_cadastro/tests/validate_foundation.sql
-          echo "- Domain, H001/H002, RLS and immutability assertions: **passed**" >> "$GITHUB_STEP_SUMMARY"
+          psql "$database_url" --no-psqlrc --set=ON_ERROR_STOP=1 \
+            --set=owner_user_id="$TEST_OWNER_USER_ID" \
+            --set=other_user_id="$TEST_OTHER_USER_ID" \
+            --file=supabase/fila_cadastro/tests/validate_operations.sql
+          echo "- Domain, RLS, transitions, reviews, rollback and idempotency: **passed**" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Lint local database
         shell: bash
