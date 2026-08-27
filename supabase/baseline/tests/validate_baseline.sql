@@ -240,10 +240,11 @@ as $$
         'collation', case
           when position_number <= index_catalog.indnkeyatts
            and index_catalog.indcollation[position_number - 1] <> 0 then (
-            select collation_namespace.nspname || '.' || collation.collname
-            from pg_collation collation
-            join pg_namespace collation_namespace on collation_namespace.oid = collation.collnamespace
-            where collation.oid = index_catalog.indcollation[position_number - 1]
+            select collation_namespace.nspname || '.' || collation_catalog.collname
+            from pg_collation collation_catalog
+            join pg_namespace collation_namespace
+              on collation_namespace.oid = collation_catalog.collnamespace
+            where collation_catalog.oid = index_catalog.indcollation[position_number - 1]
           )
         end,
         'indoption', case when position_number <= index_catalog.indnkeyatts
