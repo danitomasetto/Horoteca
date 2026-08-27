@@ -28,7 +28,10 @@ create table public.watch_intakes (
   user_id uuid not null references auth.users(id) on delete restrict,
   intake_number bigint not null,
   intake_code text generated always as
-    ('H' || lpad(intake_number::text, 3, '0')) stored,
+    ('H' || case
+      when intake_number < 1000 then lpad(intake_number::text, 3, '0')
+      else intake_number::text
+    end) stored,
   status text not null default 'new' check (status in (
     'new',
     'draft',
@@ -71,6 +74,7 @@ create table public.watch_intakes (
   finalization_error_code text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  constraint watch_intakes_number_positive_check check (intake_number > 0),
   constraint watch_intakes_number_key unique (intake_number),
   constraint watch_intakes_code_key unique (intake_code),
   constraint watch_intakes_id_user_key unique (id, user_id),
