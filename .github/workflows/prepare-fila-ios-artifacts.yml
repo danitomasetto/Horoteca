@@ -1,0 +1,91 @@
+name: Prepare Fila migration and iOS scaffold
+
+on:
+  pull_request:
+    paths:
+      - "supabase/fila_cadastro/**"
+      - "flutter_app/**"
+      - ".github/workflows/prepare-fila-ios-artifacts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - name: Generate migration with Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          generation_dir="$RUNNER_TEMP/migration-generation"
+          mkdir -p "$generation_dir"
+          supabase init --workdir "$generation_dir"
+          supabase migration new fila_cadastro --workdir "$generation_dir"
+          migration_file="$(find "$generation_dir/supabase/migrations" -type f -name '*_fila_cadastro.sql' -print -quit)"
+          test -n "$migration_file"
+          {
+            printf '%s\n\n' '-- Fila de Cadastro — schema, segurança e operações protegidas.'
+            sed '1d; /Este arquivo NÃO é uma migration/d; /ainda NÃO é migration/d' \
+              supabase/fila_cadastro/foundation_prototype.sql
+            printf '\n'
+            sed '1d; /Este arquivo complementa foundation_prototype.sql e ainda NÃO é migration/d' \
+              supabase/fila_cadastro/operations_prototype.sql
+          } > "$migration_file"
+          mkdir -p generated/migration
+          cp "$migration_file" generated/migration/
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate iOS platform project
+        working-directory: flutter_app
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter create --platforms ios --org br.com.tomasetto --project-name horoteca .
+          /usr/bin/python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('ios/Runner/Info.plist')
+          text = path.read_text()
+          marker = '</dict>'
+          permissions = (
+              '<key>NSCameraUsageDescription</key>\n'
+              '<string>Fotografar relógios da coleção.</string>\n'
+              '<key>NSPhotoLibraryUsageDescription</key>\n'
+              '<string>Selecionar fotos dos relógios.</string>\n'
+          )
+          if 'NSCameraUsageDescription' not in text:
+              text = text.replace(marker, permissions + marker)
+          path.write_text(text)
+          PY
+          flutter pub get
+          flutter analyze
+          flutter test
+          flutter build ios --release --no-codesign
+          mkdir -p ../generated/ios
+          cp -R ios ../generated/ios/
+
+      - name: Upload generated migration
+        uses: actions/upload-artifact@v4
+        with:
+          name: fila-cadastro-migration
+          path: generated/migration
+          if-no-files-found: error
+
+      - name: Upload validated iOS scaffold
+        uses: actions/upload-artifact@v4
+        with:
+          name: horoteca-ios-scaffold
+          path: generated/ios
+          if-no-files-found: error
