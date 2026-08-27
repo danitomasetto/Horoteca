@@ -71,10 +71,11 @@ jobs:
           path.write_text(text)
           PY
           flutter pub get
+          mkdir -p ../generated/ios
+          cp pubspec.lock ../generated/ios/
           flutter analyze
           flutter test
           flutter build ios --release --no-codesign
-          mkdir -p ../generated/ios
           cp -R ios ../generated/ios/
 
       - name: Upload generated migration
