@@ -910,11 +910,22 @@
       }
 
       function normalizeWatch(row) {
-        const directExpenses = () => state.expenses.filter(
-          (item) => item.watch_id === row.id && !item.is_shared,
-        );
         const allocatedExpenses = () => state.allocations.filter(
-          (item) => item.watch_id === row.id,
+          (item) => item.watch_id === row.id && item.amount_brl_allocated != null,
+        );
+        const directExpenses = () => {
+          const allocatedExpenseIds = new Set(
+            allocatedExpenses().map((item) => item.expense_id),
+          );
+          return state.expenses.filter(
+            (item) => item.watch_id === row.id
+              && !item.is_shared
+              && !allocatedExpenseIds.has(item.id),
+          );
+        };
+        const allocatedAmount = (item) => (
+          Number(item.amount_brl_allocated)
+          + Number(item.rounding_adjustment_brl || 0)
         );
         const item = state.acquisitionItems.find((value) => value.watch_id === row.id);
         const acquisition = item
@@ -933,7 +944,7 @@
               (sum, item) => sum + Number(item.amount_brl || 0), 0,
             );
             const allocated = allocatedExpenses().reduce(
-              (sum, item) => sum + Number(item.amount_brl_allocated || 0), 0,
+              (sum, item) => sum + allocatedAmount(item), 0,
             );
             return direct + allocated || row.purchase_total_brl || row.purchase_price || 0;
           },
@@ -1430,11 +1441,15 @@
           amount: item.amount_brl,
           method: item.allocation_method,
         }));
-        const allocated = watch.allocations.map((item) => ({
-          label: "Despesa rateada",
-          amount: item.amount_brl_allocated,
-          method: item.allocation_basis,
-        }));
+        const allocated = watch.allocations.map((item) => {
+          const expense = state.expenses.find((value) => value.id === item.expense_id);
+          return {
+            label: expense?.description || expense?.category || "Despesa rateada",
+            amount: Number(item.amount_brl_allocated)
+              + Number(item.rounding_adjustment_brl || 0),
+            method: item.allocation_basis,
+          };
+        });
         const values = [...direct, ...allocated];
         return values.length
           ? values.map((item) => `<div class="history-item"><strong>${escapeHtml(item.label)}</strong><p>${item.amount == null ? "Valor em reais não informado" : money.format(item.amount)}${item.method ? ` • ${escapeHtml(item.method)}` : ""}</p></div>`).join("")
