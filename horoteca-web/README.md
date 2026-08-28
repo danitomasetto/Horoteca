@@ -1,7 +1,7 @@
 # Horoteca Web
 
-Página estática de consulta da coleção Horoteca, com login e acesso à ficha
-completa, custos estruturados, histórico e fontes de cada peça.
+Página estática da coleção Horoteca, com login, acesso à ficha completa, custos
+estruturados, histórico, fontes e inclusão de fotografias de cada peça.
 
 Publicacao inicial:
 
@@ -24,5 +24,16 @@ Redirect URL: https://danitomasetto.github.io/Horoteca/
 
 O navegador usa somente a chave publica (`sb_publishable_...`). Nunca publicar
 `service_role` ou secret keys.
+
+## Fotografias
+
+Na coleção, o botão `+ Adicionar fotos` permite selecionar uma ou várias imagens
+JPEG, PNG, WebP, HEIC ou HEIF, com limite de 15 MB por arquivo. A primeira foto
+adicionada à peça passa a ser sua capa.
+
+Os arquivos ficam no bucket privado `watch-photos`, dentro da pasta do usuário
+autenticado. A página mostra as imagens por links temporários assinados e respeita
+as políticas RLS do banco e do Storage. Nenhuma chave administrativa é usada no
+navegador.
 
 Depois, quando o dominio estiver pronto, adicionar o arquivo `CNAME` nesta pasta e configurar o DNS do dominio para GitHub Pages.
