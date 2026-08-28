@@ -551,9 +551,29 @@
           </div>
           <div class="actions">
             <button id="loginButton" type="submit">Entrar</button>
+            <button id="forgotPasswordButton" class="secondary" type="button">Esqueci minha senha</button>
           </div>
         </form>
         <p id="loginStatus" class="status hidden"></p>
+      </section>
+
+      <section id="resetPasswordView" class="login hidden">
+        <h1>Definir nova senha</h1>
+        <p>Escolha uma nova senha para continuar usando a Horoteca.</p>
+        <form id="resetPasswordForm">
+          <div class="field">
+            <label for="newPassword">Nova senha</label>
+            <input id="newPassword" name="new_password" autocomplete="new-password" minlength="8" required type="password" />
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Confirmar nova senha</label>
+            <input id="confirmPassword" name="confirm_password" autocomplete="new-password" minlength="8" required type="password" />
+          </div>
+          <div class="actions">
+            <button id="resetPasswordButton" type="submit">Salvar nova senha</button>
+          </div>
+        </form>
+        <p id="resetPasswordStatus" class="status hidden"></p>
       </section>
 
       <section id="appView" class="hidden">
@@ -659,8 +679,8 @@
 
     <script>
       const SUPABASE_URL = "https://nlkhbhgzscpdistzuyod.supabase.co";
-      const SUPABASE_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6Im5sa2hiaGd6c2NwZGlzdHp1eW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTQ3MDgsImV4cCI6MjEwMTUzMDcwOH0.Niy8n76LZnvIbwbItuP8164Rx7wduU9q8tTwTGY21B8";
+      const SUPABASE_KEY = "sb_publishable_8ss7l24-Qc4EeS7l2hVzQg_lSPyn1bS";
+      const RECOVERY_REDIRECT_URL = "https://danitomasetto.github.io/Horoteca/";
 
       const money = new Intl.NumberFormat("pt-BR", {
         style: "currency",
@@ -686,10 +706,15 @@
 
       const els = {
         loginView: document.querySelector("#loginView"),
+        resetPasswordView: document.querySelector("#resetPasswordView"),
         appView: document.querySelector("#appView"),
         loginForm: document.querySelector("#loginForm"),
         loginButton: document.querySelector("#loginButton"),
+        forgotPasswordButton: document.querySelector("#forgotPasswordButton"),
         loginStatus: document.querySelector("#loginStatus"),
+        resetPasswordForm: document.querySelector("#resetPasswordForm"),
+        resetPasswordButton: document.querySelector("#resetPasswordButton"),
+        resetPasswordStatus: document.querySelector("#resetPasswordStatus"),
         refreshButton: document.querySelector("#refreshButton"),
         logoutButton: document.querySelector("#logoutButton"),
         collectionTab: document.querySelector("#collectionTab"),
@@ -731,6 +756,7 @@
 
       function show(view) {
         els.loginView.classList.toggle("hidden", view !== "login");
+        els.resetPasswordView.classList.toggle("hidden", view !== "reset-password");
         els.appView.classList.toggle("hidden", view !== "app");
       }
 
@@ -798,8 +824,32 @@
         return request("/auth/v1/token?grant_type=password", {
           method: "POST",
           body: JSON.stringify({ email, password }),
-          headers: { Authorization: `Bearer ${SUPABASE_KEY}` },
         });
+      }
+
+      async function requestPasswordRecovery(email) {
+        return request(`/auth/v1/recover?redirect_to=${encodeURIComponent(RECOVERY_REDIRECT_URL)}`, {
+          method: "POST",
+          body: JSON.stringify({ email }),
+        });
+      }
+
+      async function updatePassword(password) {
+        return request("/auth/v1/user", {
+          method: "PUT",
+          body: JSON.stringify({ password }),
+        });
+      }
+
+      function recoverySessionFromUrl() {
+        const values = new URLSearchParams(window.location.hash.slice(1));
+        if (values.get("type") !== "recovery" || !values.get("access_token")) return null;
+        return {
+          access_token: values.get("access_token"),
+          refresh_token: values.get("refresh_token"),
+          token_type: values.get("token_type") || "bearer",
+          expires_in: Number(values.get("expires_in") || 0),
+        };
       }
 
       async function createIntake(title, expectedItemCount) {
@@ -1465,6 +1515,53 @@
         }
       });
 
+      els.forgotPasswordButton.addEventListener("click", async () => {
+        const email = String(document.querySelector("#email").value || "").trim();
+        if (!email) {
+          status(els.loginStatus, "Informe seu e-mail para receber o link de recuperação.", true);
+          document.querySelector("#email").focus();
+          return;
+        }
+        els.forgotPasswordButton.disabled = true;
+        status(els.loginStatus, "Enviando o link de recuperação...");
+        try {
+          await requestPasswordRecovery(email);
+          status(els.loginStatus, "Link enviado. Confira sua caixa de entrada e o spam.");
+        } catch (error) {
+          status(els.loginStatus, `Não foi possível enviar o link: ${error.message}`, true);
+        } finally {
+          els.forgotPasswordButton.disabled = false;
+        }
+      });
+
+      els.resetPasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const password = String(form.get("new_password") || "");
+        const confirmation = String(form.get("confirm_password") || "");
+        if (password.length < 8) {
+          status(els.resetPasswordStatus, "A senha deve ter pelo menos 8 caracteres.", true);
+          return;
+        }
+        if (password !== confirmation) {
+          status(els.resetPasswordStatus, "As senhas informadas não coincidem.", true);
+          return;
+        }
+        els.resetPasswordButton.disabled = true;
+        status(els.resetPasswordStatus, "Salvando a nova senha...");
+        try {
+          await updatePassword(password);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          localStorage.setItem("horotecaSession", JSON.stringify(state.session));
+          show("app");
+          await loadData();
+        } catch (error) {
+          status(els.resetPasswordStatus, `Não foi possível salvar a senha: ${error.message}`, true);
+        } finally {
+          els.resetPasswordButton.disabled = false;
+        }
+      });
+
       els.newIntakeButton.addEventListener("click", showNewIntakeForm);
       els.cancelNewIntakeButton.addEventListener("click", hideNewIntakeForm);
       els.newIntakeForm.addEventListener("submit", async (event) => {
@@ -1526,7 +1623,11 @@
         render();
       });
 
-      if (state.session?.access_token) {
+      const recoverySession = recoverySessionFromUrl();
+      if (recoverySession) {
+        state.session = recoverySession;
+        show("reset-password");
+      } else if (state.session?.access_token) {
         show("app");
         loadData().catch((error) => {
           localStorage.removeItem("horotecaSession");
