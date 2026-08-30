@@ -3,21 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light" />
     <title>Horoteca</title>
     <style>
       :root {
-        --bg: #17191a;
-        --surface: #202220;
-        --surface-soft: #292b28;
-        --line: #4b4d47;
+        --bg: #f2ebdd;
+        --surface: #fbf7ee;
+        --surface-soft: #e9dfcb;
+        --line: #cfc1a3;
         --gold: #b5965c;
-        --gold-soft: #d7c9a8;
+        --gold-soft: #805f2d;
         --navy: #17191a;
-        --text: #f2ebdd;
-        --muted: #b9b3a7;
-        --ok: #a8cda8;
-        --bad: #e3a49b;
+        --text: #282721;
+        --muted: #6d675d;
+        --ok: #3f7351;
+        --bad: #a9473a;
       }
 
       * {
@@ -94,6 +94,8 @@
         padding: 16px 0 24px;
       }
 
+      .topbar { color: #f2ebdd; }
+
       .brand {
         align-items: center;
         display: flex;
@@ -130,7 +132,7 @@
       }
 
       .brand p {
-        color: var(--muted);
+        color: #d7c9a8;
         font-size: 0.68rem;
         letter-spacing: 0.13em;
         margin: 6px 0 0;
@@ -139,7 +141,7 @@
 
       .topbar button.secondary {
         border-color: var(--line);
-        color: var(--text);
+        color: #f2ebdd;
       }
 
       .login {
@@ -384,11 +386,11 @@
       }
 
       .brand-card:hover { border-color: var(--gold); }
-      .brand-card strong { color: var(--gold-soft); display: block; font-family: Georgia, "Times New Roman", serif; font-size: 1.08rem; font-weight: 500; }
+      .brand-card strong { color: var(--navy); display: block; font-family: Georgia, "Times New Roman", serif; font-size: 1.08rem; font-weight: 500; }
       .brand-card span { color: var(--muted); display: block; font-size: .76rem; font-weight: 500; line-height: 1.45; margin-top: 8px; }
 
       .metric strong {
-        color: var(--gold-soft);
+        color: var(--navy);
         display: block;
         font-size: 1.45rem;
         line-height: 1.1;
@@ -449,7 +451,7 @@
       }
 
       .title .code {
-        color: var(--gold);
+        color: var(--gold-soft);
         font-size: 0.78rem;
         font-weight: 900;
         letter-spacing: 0.05em;
@@ -528,7 +530,7 @@
       }
 
       .history-item strong {
-        color: var(--gold-soft);
+        color: var(--navy);
         display: block;
         margin-bottom: 4px;
       }
@@ -537,6 +539,40 @@
         color: var(--muted);
         margin: 0;
       }
+
+      .story-copy {
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.02rem;
+        line-height: 1.7;
+        margin: 12px 0;
+        white-space: pre-line;
+      }
+
+      .story-empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .story-form {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .story-form textarea {
+        background: var(--surface-soft);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        color: var(--text);
+        font: inherit;
+        min-height: 148px;
+        padding: 12px;
+        resize: vertical;
+      }
+
+      .story-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .story-actions button { padding: 0.62rem 0.85rem; }
 
       .photo-section {
         border-top: 1px solid var(--line);
@@ -1357,6 +1393,19 @@
         els.metricResult.textContent = money.format(value - cost);
       }
 
+      async function saveWatchStory(watchId, story) {
+        const rows = await request(`/rest/v1/watches?id=eq.${encodeURIComponent(watchId)}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ notes: story.trim() || null }),
+        });
+        if (!Array.isArray(rows) || rows.length !== 1) {
+          throw new Error("A história não foi salva.");
+        }
+        const watch = state.watches.find((item) => Number(item.id) === Number(watchId));
+        if (watch) watch.notes = rows[0].notes;
+      }
+
       function renderIntakes() {
         const draftCount = state.intakes.filter((intake) => intake.status === "draft").length;
         const reviewCount = state.intakes.filter((intake) =>
@@ -1692,6 +1741,22 @@
             ${row("Estado", watch.condition || "Não informado")}
             ${row("Funcionamento", watch.function_status || "Não informado")}
           </div>
+          <details class="story-details">
+            <summary>História da peça</summary>
+            <p class="story-copy ${watch.notes ? "" : "story-empty"}">${watch.notes ? escapeHtml(watch.notes) : "Ainda não registrada. Conte como esta peça chegou ao acervo, o que despertou seu interesse e o que ela preserva."}</p>
+            <button class="story-edit-button secondary" data-watch-id="${watch.id}" type="button">${watch.notes ? "Editar história" : "Registrar história"}</button>
+            <form class="story-form hidden" data-watch-id="${watch.id}">
+              <label class="field">
+                <span>História da peça</span>
+                <textarea maxlength="5000" name="story" placeholder="A procedência, a aquisição, as marcas do tempo e o significado desta peça no acervo.">${escapeHtml(watch.notes || "")}</textarea>
+              </label>
+              <div class="story-actions">
+                <button class="story-save-button" type="submit">Salvar história</button>
+                <button class="story-cancel-button secondary" type="button">Cancelar</button>
+              </div>
+              <p class="story-status muted hidden" aria-live="polite"></p>
+            </form>
+          </details>
           <details>
             <summary>Ficha completa da peça</summary>
             <div class="card-body">
@@ -2042,9 +2107,41 @@
       els.intakeTab.addEventListener("click", () => showArea("intake"));
       els.backToIntakesButton.addEventListener("click", showIntakeOverview);
       els.watchGrid.addEventListener("click", (event) => {
-        const button = event.target.closest(".photo-upload-button");
-        if (!button) return;
-        button.closest(".photo-section").querySelector(".photo-input").click();
+        const photoButton = event.target.closest(".photo-upload-button");
+        if (photoButton) {
+          photoButton.closest(".photo-section").querySelector(".photo-input").click();
+          return;
+        }
+        const editButton = event.target.closest(".story-edit-button");
+        if (editButton) {
+          const story = editButton.closest("details");
+          story.open = true;
+          story.querySelector(".story-form").classList.remove("hidden");
+          story.querySelector("textarea").focus();
+          return;
+        }
+        const cancelButton = event.target.closest(".story-cancel-button");
+        if (cancelButton) {
+          cancelButton.closest(".story-form").classList.add("hidden");
+        }
+      });
+      els.watchGrid.addEventListener("submit", async (event) => {
+        const form = event.target.closest(".story-form");
+        if (!form) return;
+        event.preventDefault();
+        const watchId = Number(form.dataset.watchId);
+        const saveButton = form.querySelector(".story-save-button");
+        const storyStatus = form.querySelector(".story-status");
+        saveButton.disabled = true;
+        status(storyStatus, "Salvando história...");
+        try {
+          await saveWatchStory(watchId, form.elements.story.value);
+          render();
+        } catch (error) {
+          status(storyStatus, `Não foi possível salvar: ${error.message}`, true);
+        } finally {
+          saveButton.disabled = false;
+        }
       });
       els.watchGrid.addEventListener("change", (event) => {
         if (!event.target.matches(".photo-input")) return;
