@@ -1267,6 +1267,63 @@
         }
       }
 
+      function finalizationKey() {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+          const value = Math.floor(Math.random() * 16);
+          return (character === "x" ? value : (value & 0x3) | 0x8).toString(16);
+        });
+      }
+
+      async function finalizeIntake(intakeId, button) {
+        const intake = state.intakes.find((item) => Number(item.id) === Number(intakeId));
+        if (!intake || !["owner_approved", "finalization_ready", "finalization_failed"].includes(intake.status)) {
+          throw new Error("Esta ficha não está disponível para finalização.");
+        }
+
+        const confirmed = window.confirm(
+          `Finalizar a ficha ${intake.intake_code} V${Number(intake.version || 1)}?\n\n`
+          + "Esta ação grava definitivamente as peças e os custos na coleção.",
+        );
+        if (!confirmed) return;
+
+        button.disabled = true;
+        status(els.intakeDetailStatus, "Finalizando a ficha e gravando a coleção...");
+        try {
+          if (intake.status === "owner_approved") {
+            await request("/rest/v1/rpc/transition_watch_intake", {
+              method: "POST",
+              body: JSON.stringify({
+                p_intake_id: intake.id,
+                p_expected_version: Number(intake.version || 1),
+                p_to_status: "finalization_ready",
+                p_reason: `Finalização da ficha ${intake.intake_code} solicitada pelo proprietário no app Horoteca.`,
+              }),
+            });
+          }
+
+          const result = await request("/rest/v1/rpc/finalize_watch_intake", {
+            method: "POST",
+            body: JSON.stringify({
+              p_intake_id: intake.id,
+              p_expected_version: Number(intake.version || 1),
+              p_idempotency_key: finalizationKey(),
+            }),
+          });
+          if (result?.status === "failed") {
+            throw new Error(result.error_summary || "A finalização foi recusada pela validação da ficha.");
+          }
+
+          await loadData();
+          await openIntakeDetail(intake.id);
+          status(els.intakeDetailStatus, "Ficha finalizada. A peça já integra a coleção.");
+        } catch (error) {
+          status(els.intakeDetailStatus, `Não foi possível finalizar: ${error.message}`, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
       async function loadData() {
         status(els.appStatus, "Carregando colecao...");
         status(els.intakeStatus, "Carregando fila...");
@@ -1584,6 +1641,14 @@
             </div>`
           : "";
 
+        const finalization = ["owner_approved", "finalization_ready", "finalization_failed"].includes(intake.status)
+          ? `<div class="detail-item">
+              <strong>Ficha pronta para finalização</strong>
+              <p class="muted">Esta etapa grava definitivamente a peça, a aquisição e os custos na coleção.</p>
+              <button class="finalize-intake-button" data-intake-id="${intake.id}" type="button">Finalizar ficha</button>
+            </div>`
+          : "";
+
         const documents = details.documents.length
           ? details.documents.map((document) => `
               <div class="detail-item">
@@ -1670,6 +1735,7 @@
         els.intakeDetailContent.innerHTML = [
           detailSection("Resumo do processo", general, true),
           approval ? detailSection("Aprovação", approval, true) : "",
+          finalization ? detailSection("Finalização", finalization, true) : "",
           detailSection(`Documentos (${details.documents.length})`, documents),
           detailSection(`Peças (${details.items.length})`, items),
           detailSection(`Aquisições (${details.acquisitions.length})`, acquisitions),
@@ -2183,9 +2249,15 @@
       els.intakeTab.addEventListener("click", () => showArea("intake"));
       els.backToIntakesButton.addEventListener("click", showIntakeOverview);
       els.intakeDetailContent.addEventListener("click", async (event) => {
-        const button = event.target.closest(".approve-intake-button");
-        if (!button) return;
-        await approveIntake(Number(button.dataset.intakeId), button);
+        const approvalButton = event.target.closest(".approve-intake-button");
+        if (approvalButton) {
+          await approveIntake(Number(approvalButton.dataset.intakeId), approvalButton);
+          return;
+        }
+        const finalizationButton = event.target.closest(".finalize-intake-button");
+        if (finalizationButton) {
+          await finalizeIntake(Number(finalizationButton.dataset.intakeId), finalizationButton);
+        }
       });
       els.watchGrid.addEventListener("click", (event) => {
         const photoButton = event.target.closest(".photo-upload-button");
