@@ -1880,6 +1880,7 @@
             ${row("Referência", watch.reference_number || "Não informada")}
             ${row("Ano ou período", watchPeriod(watch))}
             ${row("Custo real", money.format(total))}
+            ${row("Valor estimado", estimated ? money.format(estimated) : "Não informado")}
             ${row("Estado", watch.condition || "Não informado")}
             ${row("Funcionamento", watch.function_status || "Não informado")}
           </div>
